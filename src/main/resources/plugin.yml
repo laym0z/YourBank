@@ -1,0 +1,25 @@
+name: YourBank
+version: '1.0'
+main: me.laym0z.yourBank.YourBank
+api-version: '1.21'
+
+commands:
+  bankcreate:
+    usage: /<command> <нік>
+    description: Створення банківського рахунку для гравця
+  bank:
+    usage: /<command>
+    description: Відкриття меню банку
+  penalty:
+    usage: /<command> <нік> <сума> <термін виплати> <причина>
+    description: Видати гравцю штраф
+  bankmenu:
+    usage: /<command> <нік>
+    description: Відкриває меню де банкір може поповнити або зняти кошти для гравця
+permissions:
+  yourbank.bankcreate:
+    default: op
+  yourbank.penalty:
+    default: op
+  yourbank.bankmenu:
+    default: op
