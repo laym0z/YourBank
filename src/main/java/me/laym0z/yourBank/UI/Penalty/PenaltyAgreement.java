@@ -1,64 +1,53 @@
-package me.laym0z.yourBank.UI;
+package me.laym0z.yourBank.UI.Penalty;
 
 import me.laym0z.yourBank.Data.Data;
+import me.laym0z.yourBank.UI.Bank.BankMain;
+import me.laym0z.yourBank.UI.MenuComponents.MenuInteraction;
 import me.laym0z.yourBank.YourBank;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
-import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.inventory.Inventory;
-import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.ItemMeta;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.UUID;
 
 public class PenaltyAgreement implements Listener {
-    static HashMap<UUID, List<String>> playerPenalties = new HashMap<>();
     public static void openPenaltyAgreementMenu(int ID, int sum, Player player) {
         List<String> temp = new ArrayList<>();
         temp.add(String.valueOf(ID));
         temp.add(String.valueOf(sum));
         temp.add(player.getName());
-        playerPenalties.put(player.getUniqueId(), temp);
+        YourBank.getPluginContext().penaltiesManager.setPlayerPenalty(player.getUniqueId(), temp);
+
         Inventory menu = Bukkit.createInventory(null, 54, "Підтвердження оплати");
 
-        menu.setItem(19, createPaper("Оплатити"));
-        menu.setItem(20, createPaper("Оплатити"));
-        menu.setItem(21, createPaper("Оплатити"));
-        menu.setItem(28, createPaper("Оплатити"));
-        menu.setItem(29, createPaper("Оплатити"));
-        menu.setItem(30, createPaper("Оплатити"));
-        menu.setItem(37, createPaper("Оплатити"));
-        menu.setItem(38, createPaper("Оплатити"));
-        menu.setItem(39, createPaper("Оплатити"));
+        menu.setItem(19, MenuInteraction.createPaper("Оплатити"));
+        menu.setItem(20, MenuInteraction.createPaper("Оплатити"));
+        menu.setItem(21, MenuInteraction.createPaper("Оплатити"));
+        menu.setItem(28, MenuInteraction.createPaper("Оплатити"));
+        menu.setItem(29, MenuInteraction.createPaper("Оплатити"));
+        menu.setItem(30, MenuInteraction.createPaper("Оплатити"));
+        menu.setItem(37, MenuInteraction.createPaper("Оплатити"));
+        menu.setItem(38, MenuInteraction.createPaper("Оплатити"));
+        menu.setItem(39, MenuInteraction.createPaper("Оплатити"));
 
-        menu.setItem(23, createPaper("Відміна"));
-        menu.setItem(24, createPaper("Відміна"));
-        menu.setItem(25, createPaper("Відміна"));
-        menu.setItem(32, createPaper("Відміна"));
-        menu.setItem(33, createPaper("Відміна"));
-        menu.setItem(34, createPaper("Відміна"));
-        menu.setItem(41, createPaper("Відміна"));
-        menu.setItem(42, createPaper("Відміна"));
-        menu.setItem(43, createPaper("Відміна"));
+        menu.setItem(23, MenuInteraction.createPaper("Відміна"));
+        menu.setItem(24, MenuInteraction.createPaper("Відміна"));
+        menu.setItem(25, MenuInteraction.createPaper("Відміна"));
+        menu.setItem(32, MenuInteraction.createPaper("Відміна"));
+        menu.setItem(33, MenuInteraction.createPaper("Відміна"));
+        menu.setItem(34, MenuInteraction.createPaper("Відміна"));
+        menu.setItem(41, MenuInteraction.createPaper("Відміна"));
+        menu.setItem(42, MenuInteraction.createPaper("Відміна"));
+        menu.setItem(43, MenuInteraction.createPaper("Відміна"));
 
         player.openInventory(menu);
-    }
-    private static ItemStack createPaper(String name) {
-        ItemStack paper = new ItemStack(Material.PAPER);
-        ItemMeta meta = paper.getItemMeta();
-        if (meta != null) {
-            meta.setDisplayName(name); // §e — жовтий текст;
-            paper.setItemMeta(meta);
-        }
-        return paper;
     }
     @EventHandler
     public void onClickInventory(InventoryClickEvent event) {
@@ -71,8 +60,8 @@ public class PenaltyAgreement implements Listener {
             String displayName = event.getCurrentItem().getItemMeta().getDisplayName();
 
             switch (displayName) {
-                case "Оплатити" -> {
-                    List<String> info = playerPenalties.get(player.getUniqueId());
+                case "§eОплатити" -> {
+                    List<String> info = YourBank.getPluginContext().penaltiesManager.getPlayerPenalty(player.getUniqueId());
                     boolean result = Data.payPenalty(Integer.parseInt(info.get(0)), Integer.parseInt(info.get(1)), info.get(2));
                     if (result) {
                         player.sendMessage(ChatColor.GREEN+"[Банк] Штраф успішно оплачено");
@@ -84,13 +73,21 @@ public class PenaltyAgreement implements Listener {
                     }
                     player.closeInventory();
                 }
-                case "Відміна" -> {
+                case "§eВідміна" -> {
                     player.closeInventory();
                     Bukkit.getScheduler().runTaskLater(YourBank.getInstance(), () -> {
                         BankMain.openBankMenu(player, Data.getPlayerData(player.getName()));
+                        YourBank.pluginContext.penaltiesManager.removePlayerPenalty(player.getUniqueId());
                     }, 1L); // 1 тік затримки
                 }
             }
+        }
+    }
+    @EventHandler
+    public void InventoryCloseEvent(InventoryCloseEvent event) {
+        if (event.getView().getTitle().equals("Підтвердження оплати")) {
+            Player player = (Player) event.getPlayer();
+            YourBank.pluginContext.penaltiesManager.removePlayerPenalty(player.getUniqueId());
         }
     }
 }

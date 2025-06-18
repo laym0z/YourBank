@@ -7,19 +7,30 @@ commands:
   bankcreate:
     usage: /<command> <нік>
     description: Створення банківського рахунку для гравця
+    permission: yourbank.bankcreate
   bank:
     usage: /<command>
     description: Відкриття меню банку
   penalty:
     usage: /<command> <нік> <сума> <термін виплати> <причина>
     description: Видати гравцю штраф
+    permission: yourbank.penalty
   bankmenu:
     usage: /<command> <нік>
     description: Відкриває меню де банкір може поповнити або зняти кошти для гравця
+    permission: yourbank.bankmenu
+  bankdebug:
+    permission: yourbank.bankdebug
 permissions:
   yourbank.bankcreate:
+    description: Дозвіл тільки для OP
     default: op
   yourbank.penalty:
+    description: Дозвіл тільки для OP
     default: op
   yourbank.bankmenu:
+    description: Дозвіл тільки для OP
+    default: op
+  yourbank.bankdebug:
+    description: Дозвіл тільки для OP
     default: op

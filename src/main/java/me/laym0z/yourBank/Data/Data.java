@@ -1,6 +1,7 @@
 package me.laym0z.yourBank.Data;
 
 import java.sql.*;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -8,7 +9,9 @@ import java.util.List;
 public class Data {
     static String registeredPlayersPath = "jdbc:sqlite:plugins/registerPlayers/registerPlayers.db";
     static String bankPath = "jdbc:sqlite:plugins/yourBank/yourBank.db";
-    //----------------------REGISTERED----------------------------
+    static String passportPath = "jdbc:sqlite:plugins/yourPassport/Passports.db";
+
+    //----------------------REGISTERED PLAYER----------------------------
 
     public static boolean hasPlayedBefore(String name) {
         String sql = "SELECT 1 FROM registered_players WHERE name = ? LIMIT 1";
@@ -26,9 +29,49 @@ public class Data {
 
     //-------------------------BANK--------------------------------
 
-    public static boolean getPlayer(String name, String path, String table) {
-        String sql = String.format("SELECT 1 FROM %s WHERE name = ? LIMIT 1", table);
-        try (Connection conn = DriverManager.getConnection(path);
+    public static boolean createBankAccount(String name) {
+        String insertDataSQL = "INSERT INTO Bank(name, diamonds, create_date) " +
+                "VALUES (?, ?, ?)";
+        try (Connection conn = DriverManager.getConnection(bankPath);
+             PreparedStatement stmt = conn.prepareStatement(insertDataSQL)) {
+
+            stmt.setString(1, name);                                         // name
+            stmt.setInt(2, 0);                                            // diamonds
+            stmt.setString(3, String.valueOf(LocalDate.now()));              // create_date
+
+            int result = stmt.executeUpdate();
+            if (result == 1) {
+                System.out.println("Data has been inserted.");
+                return true;
+            }
+            else {
+                return false;
+            }
+
+        } catch (SQLException e) {
+            System.out.println("SQL Error: " + e.getMessage());
+        }
+        return false;
+    }
+
+    public static boolean getPlayersPassport(String name) {
+        String sql = "SELECT 1 FROM Players WHERE name = ? LIMIT 1";
+        try (Connection conn = DriverManager.getConnection(passportPath);
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, name);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                return rs.next();
+            }
+
+        } catch (SQLException e) {
+            System.out.println("SQL Error: " + e.getMessage());
+        }
+        return false;
+    }
+
+    public static boolean getPlayersBank(String name) {
+        String sql = "SELECT 1 FROM Bank WHERE name = ? LIMIT 1";
+        try (Connection conn = DriverManager.getConnection(bankPath);
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setString(1, name);
             try (ResultSet rs = pstmt.executeQuery()) {
@@ -60,15 +103,17 @@ public class Data {
 
     }
 
-    public static List<String> getAllPlayers() {
-        String SQLselectQuery = "SELECT name FROM Bank ORDER BY name ASC";
-        List<String> names = new ArrayList<>();
-
+    public static List<List<String>> getTopPlayers() {
+        String SQLselectQuery = "SELECT name, diamonds FROM Bank ORDER BY diamonds ASC";
+        List<List<String>> names = new ArrayList<>();
         try (Connection conn = DriverManager.getConnection(bankPath);
              PreparedStatement pstmt = conn.prepareStatement(SQLselectQuery)) {
             try (ResultSet rs = pstmt.executeQuery()) {
-                if (rs.next()) {
-                    names.add(rs.getString("name"));
+                while (rs.next()) {
+                    List<String> temp = new ArrayList<>();
+                    temp.add(rs.getString("name"));
+                    temp.add(String.valueOf(rs.getInt("diamonds")));
+                    names.add(temp);
                 }
             }
         } catch (SQLException e) {
@@ -342,6 +387,7 @@ public class Data {
         String sqlCheck = "SELECT diamonds FROM bank WHERE name = ?";
         String sqlBank = "UPDATE bank SET diamonds = diamonds - ? WHERE name = ?";
         String sqlPenalty = "DELETE FROM Penalties WHERE id = ?";
+        String SQLUnBlockQuery = "UPDATE Bank SET is_blocked = 0 WHERE name = ?";
 
         try (Connection conn = DriverManager.getConnection(bankPath)) {
             conn.setAutoCommit(false); // Початок транзакції
@@ -374,7 +420,12 @@ public class Data {
                 deleteStmt.setInt(1, ID);
                 deleteStmt.executeUpdate();
             }
-
+            if (!haveToBlock(name)) {
+                try (PreparedStatement blockStmt = conn.prepareStatement(SQLUnBlockQuery)) {
+                    blockStmt.setString(1, name);
+                    blockStmt.executeUpdate();
+                }
+            }
             conn.commit(); // Якщо все пройшло успішно — фіксуємо зміни
             return true;
 

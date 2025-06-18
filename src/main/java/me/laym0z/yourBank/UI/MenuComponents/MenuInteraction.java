@@ -1,16 +1,21 @@
-package me.laym0z.yourBank.UI.menuHelp;
+package me.laym0z.yourBank.UI.MenuComponents;
 
 import me.laym0z.yourBank.Data.Data;
 import org.bukkit.Material;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
+import java.util.Objects;
 
 public class MenuInteraction {
+
     static int[] incSlots = {10, 11, 12, 13, 14, 15, 16};
     static int[] dicSlots = {16, 15, 14, 13, 12, 11, 10};
+
     public static void IncButtons(Inventory inv, int amount, Material type) {
 
         for (int slot : incSlots) {
@@ -66,7 +71,7 @@ public class MenuInteraction {
     public static void Convert(Inventory inv, Material type) {
         for (int slot : incSlots) {
             if (inv.getItem(slot) == null) return;
-            int amount = inv.getItem(slot).getAmount();
+            int amount = Objects.requireNonNull(inv.getItem(slot)).getAmount();
             inv.setItem(slot, new ItemStack(type, amount));
         }
     }
@@ -120,13 +125,13 @@ public class MenuInteraction {
         System.out.println(indexes);
         int temp = amount;
         while (amount > 0) {
-            int itemAmount = playerInv.getItem(indexes.get(i)).getAmount();
+            int itemAmount = Objects.requireNonNull(playerInv.getItem(indexes.get(i))).getAmount();
             if (amount >= itemAmount) {
                 amount -= itemAmount;
                 playerInv.setItem(indexes.get(i), null);
             }
             else {
-                playerInv.getItem(indexes.get(i)).setAmount(itemAmount-amount);
+                Objects.requireNonNull(playerInv.getItem(indexes.get(i))).setAmount(itemAmount-amount);
                 amount = 0;
             }
             i++;
@@ -206,5 +211,27 @@ public class MenuInteraction {
             playerInv.setItem(playersSlot, item);
         }
         return result;
+    }
+
+    public static ItemStack createPaper(String name) {
+        ItemStack paper = new ItemStack(Material.PAPER);
+        ItemMeta meta = paper.getItemMeta();
+        if (meta != null) {
+            meta.setDisplayName("§e" + name); // §e — жовтий текст
+
+            paper.setItemMeta(meta);
+        }
+        return paper;
+    }
+
+    public static ItemStack createPaperLore(List<String> lore, String name) {
+        ItemStack paper = new ItemStack(Material.PAPER);
+        ItemMeta meta = paper.getItemMeta();
+        if (meta != null) {
+            meta.setDisplayName("§e"+name); // §e — жовтий текст
+            meta.setLore(lore);
+            paper.setItemMeta(meta);
+        }
+        return paper;
     }
 }

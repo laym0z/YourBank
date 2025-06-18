@@ -1,6 +1,8 @@
-package me.laym0z.yourBank.UI;
+package me.laym0z.yourBank.UI.Bank;
 
 import me.laym0z.yourBank.Data.Data;
+import me.laym0z.yourBank.UI.Penalty.Penalties;
+import me.laym0z.yourBank.UI.MenuComponents.MenuInteraction;
 import me.laym0z.yourBank.YourBank;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -13,49 +15,37 @@ import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
-
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 public class BankMain implements Listener {
     public static void openBankMenu(Player player, String[] data) {
-        player.closeInventory();
         Inventory menu = Bukkit.createInventory(null, 54, "Банк");
 
-        List<String> names = Data.getAllPlayers();
-
+        List<List<String>> names = Data.getTopPlayers();
         // Створення предметів
-        menu.setItem(1, createPaper(format(Integer.parseInt(data[1]) , "ДР"))); // diamond_ore
-        menu.setItem(6, createTopPlayer(names));// top 3 players
-        menu.setItem(8, createPaper("NONE"));//top 3 cities
+        menu.setItem(1, MenuInteraction.createPaper(format(Integer.parseInt(data[1]) , "ДР"))); // diamond_ore
+        menu.setItem(6, createTopPlayers(names));// top 3 players
+        menu.setItem(8, MenuInteraction.createPaper("NONE"));//top 3 cities
 
-        menu.setItem(20, createPaper("Переказ"));
-        menu.setItem(21, createPaper("Переказ"));
-        menu.setItem(29, createPaper("Переказ"));
-        menu.setItem(30, createPaper("Переказ"));
+        menu.setItem(20, MenuInteraction.createPaper("Переказ"));
+        menu.setItem(21, MenuInteraction.createPaper("Переказ"));
+        menu.setItem(29, MenuInteraction.createPaper("Переказ"));
+        menu.setItem(30, MenuInteraction.createPaper("Переказ"));
 
-        menu.setItem(23, createPaper("Штрафи"));
-        menu.setItem(24, createPaper("Штрафи"));
-        menu.setItem(32, createPaper("Штрафи"));
-        menu.setItem(49, createPaper("Штрафи"));
+        menu.setItem(23, MenuInteraction.createPaper("Штрафи"));
+        menu.setItem(24, MenuInteraction.createPaper("Штрафи"));
+        menu.setItem(32, MenuInteraction.createPaper("Штрафи"));
+        menu.setItem(33, MenuInteraction.createPaper("Штрафи"));
 
-
-        menu.setItem(41, createPaper(data[2]));
+        String dateOfCreate = data[2];
+        menu.setItem(3, MenuInteraction.createPaper(dateOfCreate));
 
         player.openInventory(menu);
 
     }
-    private static ItemStack createPaper(String name) {
-        ItemStack paper = new ItemStack(Material.PAPER);
-        ItemMeta meta = paper.getItemMeta();
-        if (meta != null) {
-            meta.setDisplayName("§e" + name); // §e — жовтий текст
-
-            paper.setItemMeta(meta);
-        }
-        return paper;
-    }
-    private static ItemStack createTopPlayer(List<String> names) {
+    private static ItemStack createTopPlayers(List<List<String>> names) {
         ItemStack paper = new ItemStack(Material.PAPER);
         ItemMeta meta = paper.getItemMeta();
         List<String> lore = new ArrayList<>();
@@ -63,7 +53,7 @@ public class BankMain implements Listener {
             meta.setDisplayName("§eТоп 3:"); // §e — жовтий текст
             for (int i = 0; i < 3; i++) {
                 if (i < names.size()) {
-                    lore.add(names.get(i));
+                    lore.add(i+1+". "+names.get(i).get(0)+": "+names.get(i).get(1)+" ДР");
                 }
                 else {
                     lore.add("-");
@@ -89,12 +79,13 @@ public class BankMain implements Listener {
         if (!(event.getWhoClicked() instanceof Player player)) return;
         Inventory clickedInventory = event.getClickedInventory();
         if (clickedInventory == null) return;
+
         if (event.getView().getTitle().equals("Банк")) {
             event.setCancelled(true);
 
             ItemStack clickedItem = event.getCurrentItem();
             if (clickedItem == null || !clickedItem.hasItemMeta()) return;
-            String displayName = clickedItem.getItemMeta().getDisplayName();
+            String displayName = Objects.requireNonNull(clickedItem.getItemMeta()).getDisplayName();
 
             switch (displayName) {
                 case "§eПереказ" -> {
@@ -113,7 +104,7 @@ public class BankMain implements Listener {
                     player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1, 1);
                     player.closeInventory();
                     Bukkit.getScheduler().runTaskLater(YourBank.getInstance(), () -> {
-                        Penalties.openPenaltyListMenu(player, player.getName());
+                        Penalties.openPenaltyListMenu(player, player.getName(),false);
                     }, 1L); // 1 тік затримки
                 }
             }
