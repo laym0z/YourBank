@@ -9,6 +9,7 @@ import java.util.UUID;
 public class TransferManager {
     private final Map<UUID, Integer> playerPage = new HashMap<>();
     private final HashMap<UUID, Inventory> playerMenus = new HashMap<>();
+    private final HashMap<UUID, Boolean> payCommission = new HashMap<>();
 
     public void setPlayerPage(UUID uuid, int page) {
         playerPage.put(uuid, page);
@@ -34,10 +35,23 @@ public class TransferManager {
         playerMenus.remove(uuid);
     }
 
+    public void addPayCommissionChoose(UUID uuid, Boolean choose) {
+        payCommission.put(uuid, choose);
+    }
+
+    public Boolean getPayCommissionChoose(UUID uuid) {
+        return payCommission.get(uuid);
+    }
+
+    public void removeFromPayCommissionChoose(UUID uuid) {
+        payCommission.remove(uuid);
+    }
+
     //--------------------PRINTS-------------------------------
 
     public void printAll() {
         System.out.println("playerPage: "+playerPage);
         System.out.println("playerMenus: "+playerMenus);
+        System.out.println("payCommission: "+payCommission);
     }
 }

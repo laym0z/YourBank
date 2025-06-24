@@ -1,6 +1,6 @@
 package me.laym0z.yourBank.UI.Penalty;
 
-import me.laym0z.yourBank.Data.Data;
+import me.laym0z.yourBank.Data.TempStorage.SQLQueries.Data;
 import me.laym0z.yourBank.UI.Bank.BankMain;
 import me.laym0z.yourBank.UI.MenuComponents.MenuInteraction;
 import me.laym0z.yourBank.YourBank;
@@ -18,34 +18,35 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class PenaltyAgreement implements Listener {
-    public static void openPenaltyAgreementMenu(int ID, int sum, Player player) {
+    public static void openPenaltyAgreementMenu(int ID, int sum, Player player, String receiver) {
         List<String> temp = new ArrayList<>();
         temp.add(String.valueOf(ID));
         temp.add(String.valueOf(sum));
         temp.add(player.getName());
+        temp.add(receiver);
         YourBank.getPluginContext().penaltiesManager.setPlayerPenalty(player.getUniqueId(), temp);
 
         Inventory menu = Bukkit.createInventory(null, 54, "Підтвердження оплати");
 
-        menu.setItem(19, MenuInteraction.createPaper("Оплатити"));
-        menu.setItem(20, MenuInteraction.createPaper("Оплатити"));
-        menu.setItem(21, MenuInteraction.createPaper("Оплатити"));
-        menu.setItem(28, MenuInteraction.createPaper("Оплатити"));
-        menu.setItem(29, MenuInteraction.createPaper("Оплатити"));
-        menu.setItem(30, MenuInteraction.createPaper("Оплатити"));
-        menu.setItem(37, MenuInteraction.createPaper("Оплатити"));
-        menu.setItem(38, MenuInteraction.createPaper("Оплатити"));
-        menu.setItem(39, MenuInteraction.createPaper("Оплатити"));
+        menu.setItem(19, MenuInteraction.createPaper(ChatColor.GREEN+ "Оплатити"));
+        menu.setItem(20, MenuInteraction.createPaper(ChatColor.GREEN+"Оплатити"));
+        menu.setItem(21, MenuInteraction.createPaper(ChatColor.GREEN+"Оплатити"));
+        menu.setItem(28, MenuInteraction.createPaper(ChatColor.GREEN+"Оплатити"));
+        menu.setItem(29, MenuInteraction.createPaper(ChatColor.GREEN+"Оплатити"));
+        menu.setItem(30, MenuInteraction.createPaper(ChatColor.GREEN+"Оплатити"));
+        menu.setItem(37, MenuInteraction.createPaper(ChatColor.GREEN+"Оплатити"));
+        menu.setItem(38, MenuInteraction.createPaper(ChatColor.GREEN+"Оплатити"));
+        menu.setItem(39, MenuInteraction.createPaper(ChatColor.GREEN+"Оплатити"));
 
-        menu.setItem(23, MenuInteraction.createPaper("Відміна"));
-        menu.setItem(24, MenuInteraction.createPaper("Відміна"));
-        menu.setItem(25, MenuInteraction.createPaper("Відміна"));
-        menu.setItem(32, MenuInteraction.createPaper("Відміна"));
-        menu.setItem(33, MenuInteraction.createPaper("Відміна"));
-        menu.setItem(34, MenuInteraction.createPaper("Відміна"));
-        menu.setItem(41, MenuInteraction.createPaper("Відміна"));
-        menu.setItem(42, MenuInteraction.createPaper("Відміна"));
-        menu.setItem(43, MenuInteraction.createPaper("Відміна"));
+        menu.setItem(23, MenuInteraction.createPaper(ChatColor.RED+"Відміна"));
+        menu.setItem(24, MenuInteraction.createPaper(ChatColor.RED+"Відміна"));
+        menu.setItem(25, MenuInteraction.createPaper(ChatColor.RED+"Відміна"));
+        menu.setItem(32, MenuInteraction.createPaper(ChatColor.RED+"Відміна"));
+        menu.setItem(33, MenuInteraction.createPaper(ChatColor.RED+"Відміна"));
+        menu.setItem(34, MenuInteraction.createPaper(ChatColor.RED+"Відміна"));
+        menu.setItem(41, MenuInteraction.createPaper(ChatColor.RED+"Відміна"));
+        menu.setItem(42, MenuInteraction.createPaper(ChatColor.RED+"Відміна"));
+        menu.setItem(43, MenuInteraction.createPaper(ChatColor.RED+"Відміна"));
 
         player.openInventory(menu);
     }
@@ -58,28 +59,27 @@ public class PenaltyAgreement implements Listener {
             event.setCancelled(true);
 
             String displayName = event.getCurrentItem().getItemMeta().getDisplayName();
-
-            switch (displayName) {
-                case "§eОплатити" -> {
-                    List<String> info = YourBank.getPluginContext().penaltiesManager.getPlayerPenalty(player.getUniqueId());
-                    boolean result = Data.payPenalty(Integer.parseInt(info.get(0)), Integer.parseInt(info.get(1)), info.get(2));
-                    if (result) {
-                        player.sendMessage(ChatColor.GREEN+"[Банк] Штраф успішно оплачено");
-                        player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1, 1);
-                    }
-                    else {
-                        player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_BASS, 1, 1);
-                        player.sendMessage(ChatColor.RED+"[Банк] Не вистачає коштів для оплати");
-                    }
-                    player.closeInventory();
+            if (ChatColor.stripColor(displayName).equals("Оплатити")) {
+                List<String> info = YourBank.getPluginContext().penaltiesManager.getPlayerPenalty(player.getUniqueId());
+                boolean result = Data.payPenalty(Integer.parseInt(info.get(0)), Integer.parseInt(info.get(1)), info.get(2), info.get(3));
+                if (result) {
+                    player.sendMessage(ChatColor.DARK_GREEN+""+ChatColor.BOLD+ "[Банк]"+
+                            ChatColor.RESET+ChatColor.GREEN+" Штраф успішно оплачено");
+                    player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1, 1);
                 }
-                case "§eВідміна" -> {
-                    player.closeInventory();
-                    Bukkit.getScheduler().runTaskLater(YourBank.getInstance(), () -> {
-                        BankMain.openBankMenu(player, Data.getPlayerData(player.getName()));
-                        YourBank.pluginContext.penaltiesManager.removePlayerPenalty(player.getUniqueId());
-                    }, 1L); // 1 тік затримки
+                else {
+                    player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_BASS, 1, 1);
+                    player.sendMessage(ChatColor.DARK_RED+""+ChatColor.BOLD+ "[Банк]"+
+                            ChatColor.RESET+ChatColor.RED+" Не вистачає коштів для оплати");
                 }
+                player.closeInventory();
+            }
+            else if (ChatColor.stripColor(displayName).equals("Оплатити")) {
+                player.closeInventory();
+                Bukkit.getScheduler().runTaskLater(YourBank.getInstance(), () -> {
+                    BankMain.openBankMenu(player, Data.getPlayerData(player.getName()));
+                    YourBank.pluginContext.penaltiesManager.removePlayerPenalty(player.getUniqueId());
+                }, 1L); // 1 тік затримки
             }
         }
     }

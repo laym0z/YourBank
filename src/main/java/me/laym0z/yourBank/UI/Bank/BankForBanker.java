@@ -1,6 +1,6 @@
 package me.laym0z.yourBank.UI.Bank;
 
-import me.laym0z.yourBank.Data.Data;
+import me.laym0z.yourBank.Data.TempStorage.SQLQueries.Data;
 import me.laym0z.yourBank.UI.MenuComponents.MenuInteraction;
 import me.laym0z.yourBank.YourBank;
 import org.bukkit.Bukkit;
@@ -21,16 +21,16 @@ public class BankForBanker implements Listener {
 
         banker.closeInventory();
         Inventory menu = Bukkit.createInventory(null, 36, "Меню банкіра");
-        menu.setItem(11, MenuInteraction.createPaper("§eПоповнити рахунок"));
-        menu.setItem(12, MenuInteraction.createPaper("§eПоповнити рахунок"));
-        menu.setItem(20, MenuInteraction.createPaper("§eПоповнити рахунок"));
-        menu.setItem(21, MenuInteraction.createPaper("§eПоповнити рахунок"));
+        menu.setItem(11, MenuInteraction.createPaper(ChatColor.GREEN+""+ChatColor.BOLD + "[↑] Поповнити рахунок"));
+        menu.setItem(12, MenuInteraction.createPaper(ChatColor.GREEN+""+ChatColor.BOLD + "[↑] Поповнити рахунок"));
+        menu.setItem(20, MenuInteraction.createPaper(ChatColor.GREEN+""+ChatColor.BOLD + "[↑] Поповнити рахунок"));
+        menu.setItem(21, MenuInteraction.createPaper(ChatColor.GREEN+""+ChatColor.BOLD + "[↑] Поповнити рахунок"));
 
         menu.setItem(4, MenuInteraction.createPaper(format(Integer.parseInt(data[1]), "ДР")));
-        menu.setItem(14, MenuInteraction.createPaper("§eЗняти кошти"));
-        menu.setItem(15, MenuInteraction.createPaper("§eЗняти кошти"));
-        menu.setItem(23, MenuInteraction.createPaper("§eЗняти кошти"));
-        menu.setItem(24, MenuInteraction.createPaper("§eЗняти кошти"));
+        menu.setItem(14, MenuInteraction.createPaper(ChatColor.GREEN+""+ChatColor.BOLD +"[↓] Зняти кошти"));
+        menu.setItem(15, MenuInteraction.createPaper(ChatColor.GREEN+""+ChatColor.BOLD +"[↓] Зняти кошти"));
+        menu.setItem(23, MenuInteraction.createPaper(ChatColor.GREEN+""+ChatColor.BOLD +"[↓] Зняти кошти"));
+        menu.setItem(24, MenuInteraction.createPaper(ChatColor.GREEN+""+ChatColor.BOLD +"[↓] Зняти кошти"));
 
         YourBank.getPluginContext().sessionManager.setReceiver(banker.getUniqueId(), owner);
         banker.openInventory(menu);
@@ -56,23 +56,24 @@ public class BankForBanker implements Listener {
             ItemStack clickedItem = event.getCurrentItem();
             if (clickedItem == null || !clickedItem.hasItemMeta()) return;
             String displayName = Objects.requireNonNull(clickedItem.getItemMeta()).getDisplayName();
-            switch (displayName) {
-                case "§eПоповнити рахунок" -> {
-                    player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1, 1);
-                    player.closeInventory();
 
-                    Bukkit.getScheduler().runTaskLater(YourBank.getInstance(), () -> Deposit.openDepositMenu(player), 1L); // 1 тік затримки
+
+            if (ChatColor.stripColor(displayName).equals("[↑] Поповнити рахунок")) {
+                player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1, 1);
+                player.closeInventory();
+
+                Bukkit.getScheduler().runTaskLater(YourBank.getInstance(), () -> Deposit.openDepositMenu(player), 1L); // 1 тік затримки
+            }
+            else if (ChatColor.stripColor(displayName).equals("[↓] Зняти кошти")) {
+                if (Data.isPlayerBlocked(player.getName())) {
+                    player.sendMessage(ChatColor.DARK_RED+""+ChatColor.BOLD+ "[Банк]"+
+                                    ChatColor.RESET+ChatColor.RED+" Операція заблокована через велику кількість несплачених штрафів");
+                    player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_BASS, 1, 1);
+                    return;
                 }
-                case "§eЗняти кошти" -> {
-                    if (Data.isPlayerBlocked(player.getName())) {
-                        player.sendMessage(ChatColor.RED+ "[Банк] Операція заблокована через велику кількість несплачених штрафів");
-                        player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_BASS, 1, 1);
-                        return;
-                    }
-                    player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1, 1);
-                    player.closeInventory();
-                    Bukkit.getScheduler().runTaskLater(YourBank.getInstance(), () -> Withdraw.openWithdrawMenu(player), 1L); // 1 тік затримки
-                }
+                player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1, 1);
+                player.closeInventory();
+                Bukkit.getScheduler().runTaskLater(YourBank.getInstance(), () -> Withdraw.openWithdrawMenu(player), 1L); // 1 тік затримки
             }
         }
     }

@@ -1,6 +1,6 @@
 package me.laym0z.yourBank.commands;
 
-import me.laym0z.yourBank.Data.Data;
+import me.laym0z.yourBank.Data.TempStorage.SQLQueries.Data;
 import me.laym0z.yourBank.UI.Bank.BankForBanker;
 import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
@@ -20,7 +20,8 @@ public class BankMenu implements CommandExecutor {
             BankForBanker.openBankMenu(banker, args[0]);
         }
         else {
-            commandSender.sendMessage(ChatColor.RED+"[Банк] Цей гравець не має банківського рахунку!");
+            commandSender.sendMessage(ChatColor.DARK_RED+""+ChatColor.BOLD+ "[Банк]"+
+                    ChatColor.RESET+ChatColor.RED+" Цей гравець не має банківського рахунку!");
         }
         return true;
     }

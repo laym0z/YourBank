@@ -1,6 +1,6 @@
 package me.laym0z.yourBank.UI.MenuComponents;
 
-import me.laym0z.yourBank.Data.Data;
+import me.laym0z.yourBank.Data.TempStorage.SQLQueries.Data;
 import org.bukkit.Material;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
@@ -217,7 +217,7 @@ public class MenuInteraction {
         ItemStack paper = new ItemStack(Material.PAPER);
         ItemMeta meta = paper.getItemMeta();
         if (meta != null) {
-            meta.setDisplayName("§e" + name); // §e — жовтий текст
+            meta.setDisplayName(name); // §e — жовтий текст
 
             paper.setItemMeta(meta);
         }
@@ -228,7 +228,7 @@ public class MenuInteraction {
         ItemStack paper = new ItemStack(Material.PAPER);
         ItemMeta meta = paper.getItemMeta();
         if (meta != null) {
-            meta.setDisplayName("§e"+name); // §e — жовтий текст
+            meta.setDisplayName(name);
             meta.setLore(lore);
             paper.setItemMeta(meta);
         }

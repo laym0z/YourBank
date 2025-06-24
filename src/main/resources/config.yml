@@ -1,0 +1,25 @@
+
+#By standard: 1 diamond_ore = 2 deep_diamond_ores
+diamond_ore_to_deep_diamond_ore: 2
+
+#0.02 == 2%
+#If you don't know, so you just gotta divide a percent (0 >= percent <=100) by 100
+#If you want 10% -> 10/100 = 0.1
+diamond_ore_tax: 0.02
+
+
+#if you want to use mysql instead sqlite:
+#comment all sqlite lines
+#and uncomment all mysql lines
+database:
+
+  type: sqlite
+  sqlite_file: yourBank.db
+
+  #type:mysql
+  #mysql:
+  #  host: localhost
+  #  port: 3306
+  #  database: database_name
+  #  user: user
+  #  password: "password"

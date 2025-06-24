@@ -1,9 +1,11 @@
 package me.laym0z.yourBank;
 
-import me.laym0z.yourBank.Data.CreateBankTable;
-import me.laym0z.yourBank.Data.CreatePenaltiesTable;
+import me.laym0z.yourBank.Data.DBTableCreate.CreateBankTable;
+import me.laym0z.yourBank.Data.DBTableCreate.CreatePenaltiesTable;
+import me.laym0z.yourBank.Data.DBTableCreate.CreateStateTreasuryTable;
 import me.laym0z.yourBank.Data.PluginContext;
 import me.laym0z.yourBank.Data.ClearOnLeave;
+import me.laym0z.yourBank.Data.TempStorage.SQLQueries.DatabaseProvider;
 import me.laym0z.yourBank.Test.BankDebug;
 import me.laym0z.yourBank.UI.Bank.*;
 import me.laym0z.yourBank.UI.MenuComponents.WithdrawAndDeposit;
@@ -14,6 +16,7 @@ import me.laym0z.yourBank.commands.Bank;
 import me.laym0z.yourBank.commands.BankCreate;
 import me.laym0z.yourBank.commands.BankMenu;
 import me.laym0z.yourBank.commands.Penalty;
+import me.laym0z.yourBank.config.bankConfig;
 import org.bukkit.event.Listener;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -26,10 +29,24 @@ public final class YourBank extends JavaPlugin implements Listener {
     public void onEnable() {
         pluginContext = new PluginContext();
         instance = this;
+        DatabaseProvider database;
+        String path = "jdbc:sqlite:plugins/YourBank/yourBank.db";
+        saveDefaultConfig();
+        bankConfig.getInstance().Load();
+        String DBType = getConfig().getString("database.type");
 
-        String path = "jdbc:sqlite:plugins/yourBank/yourBank.db";
+//        if ("mysql".equalsIgnoreCase(DBType)) {
+//            // database = new MySQLProvider(...);
+//        } else {
+//            String path = "plugins/yourBank/" + getConfig().getString("database.sqlite_file");
+//            database = new Data(path);
+//        }
+
+
+        //-----------------------TABLES CREATE------------------------------
         CreateBankTable.Create(path);
         CreatePenaltiesTable.Create(path);
+        CreateStateTreasuryTable.Create(path);
 
         //--------------------------COMMANDS---------------------------------
 
@@ -59,4 +76,6 @@ public final class YourBank extends JavaPlugin implements Listener {
     }
 
     public static PluginContext getPluginContext() {return pluginContext;}
+
+
 }

@@ -1,4 +1,6 @@
-package me.laym0z.yourBank.Data;
+package me.laym0z.yourBank.Data.TempStorage.SQLQueries;
+
+import me.laym0z.yourBank.config.bankConfig;
 
 import java.sql.*;
 import java.time.LocalDate;
@@ -8,7 +10,7 @@ import java.util.List;
 
 public class Data {
     static String registeredPlayersPath = "jdbc:sqlite:plugins/registerPlayers/registerPlayers.db";
-    static String bankPath = "jdbc:sqlite:plugins/yourBank/yourBank.db";
+    static String bankPath = "jdbc:sqlite:plugins/YourBank/yourBank.db";
     static String passportPath = "jdbc:sqlite:plugins/yourPassport/Passports.db";
 
     //----------------------REGISTERED PLAYER----------------------------
@@ -104,7 +106,7 @@ public class Data {
     }
 
     public static List<List<String>> getTopPlayers() {
-        String SQLselectQuery = "SELECT name, diamonds FROM Bank ORDER BY diamonds ASC";
+        String SQLselectQuery = "SELECT name, diamonds FROM Bank ORDER BY diamonds DESC";
         List<List<String>> names = new ArrayList<>();
         try (Connection conn = DriverManager.getConnection(bankPath);
              PreparedStatement pstmt = conn.prepareStatement(SQLselectQuery)) {
@@ -195,7 +197,7 @@ public class Data {
     }
 
     public static int ConvertToDiamonds(int Amount) {
-        return Amount/2;
+        return Amount/bankConfig.getInstance().getExchangeRate();
     }
 
     public static boolean isPlayerBlocked(String name) {
@@ -216,46 +218,62 @@ public class Data {
         return isBlocked;
     }
 
-    public static boolean makeTransaction(String receiver, String sender, int sum) {
+    public static boolean makeTransaction(String receiver, String sender, int sum, Boolean payCommission) {
         String SQLAddToReceiver = "UPDATE Bank SET diamonds = diamonds + ? WHERE name = ?";
         String SQLDeductFromSender = "UPDATE Bank SET diamonds = diamonds - ? WHERE name = ? AND diamonds >= ?";
+        String SQLAddToStateTreasury = "UPDATE StateTreasury SET diamonds = diamonds + ?";
 
         try (Connection conn = DriverManager.getConnection(bankPath);
             PreparedStatement deductFromSender = conn.prepareStatement(SQLDeductFromSender)) {
+            int resultSum;
+            double percent = bankConfig.getInstance().getPerTransaction();
+            if (payCommission) {
+                resultSum = (int) Math.round(sum + (sum*percent));
+            }
+            else {
+                resultSum = sum;
+            }
             conn.setAutoCommit(false);
-            deductFromSender.setInt(1, sum);
+            deductFromSender.setInt(1, resultSum);
             deductFromSender.setString(2, sender);
-            deductFromSender.setInt(3, sum);
+            deductFromSender.setInt(3, resultSum);
             int update = deductFromSender.executeUpdate();
+            System.out.println("deduct update: "+ update);
             if (update==0) {
-                conn.rollback();
                 return false;
             }
             try (PreparedStatement addToReceiver = conn.prepareStatement(SQLAddToReceiver)) {
-                addToReceiver.setInt(1,sum);
+                if (payCommission) {
+                    resultSum = sum;
+                }
+                else {
+                    resultSum = sum - ((int) Math.round(sum*percent));
+                }
+                addToReceiver.setInt(1,resultSum);
                 addToReceiver.setString(2, receiver);
-                addToReceiver.executeQuery();
+                int addUpdate = addToReceiver.executeUpdate();
+                System.out.println("Player: "+receiver);
+                System.out.println("Add update: "+ addUpdate);
+            }
+            try (PreparedStatement addToStateTreasury = conn.prepareStatement(SQLAddToStateTreasury)) {
+                addToStateTreasury.setInt(1, (int) Math.round(sum*percent));
+
+                int addToState = addToStateTreasury.executeUpdate();
+                System.out.println("add to state update: "+ addToState);
             }
             conn.commit();
             return true;
         }
         catch (SQLException e) {
             System.out.println("SQL Error: " + e.getMessage());
-            try {
-                if (!e.getMessage().contains("not in transaction")) {
-                    DriverManager.getConnection(bankPath).rollback();
-                }
-            } catch (SQLException ex) {
-                System.out.println("Rollback Error: " + ex.getMessage());
-            }
         }
         return false;
     }
 
     //------------------------PENALTY-------------------------------
 
-    public static void addPenalty(String name, int amount, String reason, String creationDate, String paymentTerm) {
-        String SQLAddPenalty ="INSERT INTO Penalties(name, amount, reason, creation_date, payment_term) VALUES (?, ?, ?, ?, ?)";
+    public static void addPenalty(String name, int amount, String reason, String creationDate, String paymentTerm, String receiver) {
+        String SQLAddPenalty ="INSERT INTO Penalties(name, amount, reason, creation_date, payment_term, receiver) VALUES (?, ?, ?, ?, ?, ?)";
         String SQLBlockQuery = "UPDATE Bank SET is_blocked = 1 WHERE name = ?";
         boolean haveToBlock=haveToBlock(name);
         try (Connection conn = DriverManager.getConnection(bankPath);
@@ -267,6 +285,7 @@ public class Data {
             addPenalty.setString(3, reason);
             addPenalty.setString(4, creationDate);
             addPenalty.setString(5, paymentTerm);
+            addPenalty.setString(6, receiver);
             addPenalty.executeUpdate();
 
             //block if we have to
@@ -382,12 +401,14 @@ public class Data {
         return result;
     }
 
-    public static boolean payPenalty(int ID, int sum, String name) {
+    public static boolean payPenalty(int ID, int sum, String name, String receiver) {
 
         String sqlCheck = "SELECT diamonds FROM bank WHERE name = ?";
         String sqlBank = "UPDATE bank SET diamonds = diamonds - ? WHERE name = ?";
         String sqlPenalty = "DELETE FROM Penalties WHERE id = ?";
         String SQLUnBlockQuery = "UPDATE Bank SET is_blocked = 0 WHERE name = ?";
+        String SQLPayToState = "UPDATE StateTreasury SET diamonds = diamonds + ?";
+        String SQLPayToPlayer = "UPDATE Bank SET diamonds = diamonds + ? WHERE name = ?";
 
         try (Connection conn = DriverManager.getConnection(bankPath)) {
             conn.setAutoCommit(false); // Початок транзакції
@@ -414,7 +435,18 @@ public class Data {
                 updateStmt.setString(2, name);
                 updateStmt.executeUpdate();
             }
-
+            if (receiver.equalsIgnoreCase("держава")) {
+                try (PreparedStatement payToStateQuery = conn.prepareStatement(SQLPayToState)) {
+                    payToStateQuery.setInt(1, sum);
+                    payToStateQuery.executeUpdate();
+                }
+            }else {
+                try (PreparedStatement payToPlayerQuery = conn.prepareStatement(SQLPayToPlayer)) {
+                    payToPlayerQuery.setInt(1, sum);
+                    payToPlayerQuery.setString(2, receiver);
+                    payToPlayerQuery.executeUpdate();
+                }
+            }
             // Видаляємо штраф
             try (PreparedStatement deleteStmt = conn.prepareStatement(sqlPenalty)) {
                 deleteStmt.setInt(1, ID);

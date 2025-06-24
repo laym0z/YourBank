@@ -1,6 +1,6 @@
 package me.laym0z.yourBank.commands;
 
-import me.laym0z.yourBank.Data.Data;
+import me.laym0z.yourBank.Data.TempStorage.SQLQueries.Data;
 import me.laym0z.yourBank.UI.Bank.BankMain;
 import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
@@ -19,7 +19,8 @@ public class Bank implements CommandExecutor {
             BankMain.openBankMenu(player, Data.getPlayerData(player.getName()));
         }
         else {
-            commandSender.sendMessage(ChatColor.RED+"[Банк] У тебе немає банківсього рахунку!");
+            commandSender.sendMessage(ChatColor.DARK_RED+""+ChatColor.BOLD+ "[Банк]"+
+                    ChatColor.RESET+ChatColor.RED+" У тебе немає банківсього рахунку!");
         }
         return true;
     }

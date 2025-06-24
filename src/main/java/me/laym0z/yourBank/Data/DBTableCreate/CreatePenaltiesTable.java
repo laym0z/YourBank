@@ -1,11 +1,11 @@
-package me.laym0z.yourBank.Data;
+package me.laym0z.yourBank.Data.DBTableCreate;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
 
-public class CreateBankTable {
+public class CreatePenaltiesTable {
     public static void Create(String path) {
         try (Connection conn = DriverManager.getConnection(path)) {
             if (conn != null) {
@@ -15,12 +15,14 @@ public class CreateBankTable {
             System.out.println(error.getMessage());
         }
         String createTableSQL = """
-                CREATE TABLE IF NOT EXISTS Bank (
+                CREATE TABLE IF NOT EXISTS Penalties (
                     id integer PRIMARY KEY,
-                    name TEXT NOT NULL UNIQUE,
-                    diamonds INT,
-                    create_date TEXT,
-                    is_blocked BOOLEAN NOT NULL DEFAULT 0
+                    name TEXT NOT NULL,
+                    amount INT,
+                    reason TEXT,
+                    creation_date TEXT,
+                    payment_term TEXT,
+                    receiver TEXT
                 );""";
         try (Connection conn = DriverManager.getConnection(path);
              Statement stmt = conn.createStatement()) {
@@ -31,3 +33,13 @@ public class CreateBankTable {
         }
     }
 }
+
+
+/*
+id
+name
+amount
+reason
+date
+payment_term
+ */

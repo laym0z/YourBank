@@ -1,7 +1,6 @@
 package me.laym0z.yourBank.UI.Bank;
 
-import me.laym0z.yourBank.Data.Data;
-import me.laym0z.yourBank.Test.PrintHashMaps;
+import me.laym0z.yourBank.Data.TempStorage.SQLQueries.Data;
 import me.laym0z.yourBank.UI.MenuComponents.MenuInteraction;
 import me.laym0z.yourBank.YourBank;
 import org.bukkit.Bukkit;
@@ -24,32 +23,36 @@ public class Transfer implements Listener {
 
         Inventory menu = Bukkit.createInventory(null, 54, "Переведення");
         // Створення предметів
-
+        YourBank.pluginContext.transferManager.addPayCommissionChoose(player.getUniqueId(), false);
+        List<String> lore = new ArrayList<>();
+        lore.add(ChatColor.RED+"Вимкнено!");
         //Додати
-        menu.setItem(20, MenuInteraction.createPaper("+1"));
-        menu.setItem(21, MenuInteraction.createPaper("+4"));
-        menu.setItem(22, MenuInteraction.createPaper("+8"));
-        menu.setItem(23, MenuInteraction.createPaper("+16"));
-        menu.setItem(24, MenuInteraction.createPaper("+32"));
-        menu.setItem(25, MenuInteraction.createPaper("+64"));
+        menu.setItem(20, MenuInteraction.createPaper(ChatColor.GREEN+"+1"));
+        menu.setItem(21, MenuInteraction.createPaper(ChatColor.GREEN+"+4"));
+        menu.setItem(22, MenuInteraction.createPaper(ChatColor.GREEN+"+8"));
+        menu.setItem(23, MenuInteraction.createPaper(ChatColor.GREEN+"+16"));
+        menu.setItem(24, MenuInteraction.createPaper(ChatColor.GREEN+"+32"));
+        menu.setItem(25, MenuInteraction.createPaper(ChatColor.GREEN+"+64"));
 
         //Відняти
-        menu.setItem(29, MenuInteraction.createPaper("-1"));
-        menu.setItem(30, MenuInteraction.createPaper("-4"));
-        menu.setItem(31, MenuInteraction.createPaper("-8"));
-        menu.setItem(32, MenuInteraction.createPaper("-16"));
-        menu.setItem(33, MenuInteraction.createPaper("-32"));
-        menu.setItem(34, MenuInteraction.createPaper("-64"));
+        menu.setItem(29, MenuInteraction.createPaper(ChatColor.YELLOW+"-1"));
+        menu.setItem(30, MenuInteraction.createPaper(ChatColor.YELLOW+"-4"));
+        menu.setItem(31, MenuInteraction.createPaper(ChatColor.YELLOW+"-8"));
+        menu.setItem(32, MenuInteraction.createPaper(ChatColor.YELLOW+"-16"));
+        menu.setItem(33, MenuInteraction.createPaper(ChatColor.YELLOW+"-32"));
+        menu.setItem(34, MenuInteraction.createPaper(ChatColor.YELLOW+"-64"));
 
-        menu.setItem(0, MenuInteraction.createPaper("§eПопередні"));
-        menu.setItem(8, MenuInteraction.createPaper("§eНаступні"));
+        menu.setItem(0, MenuInteraction.createPaper(ChatColor.GOLD+"[←] Попередні"));
+        menu.setItem(8, MenuInteraction.createPaper(ChatColor.GOLD+"[→] Наступні"));
 
         //підтвердити
-        menu.setItem(48, MenuInteraction.createPaper("Перевести"));
-        menu.setItem(49, MenuInteraction.createPaper("Перевести"));
-        menu.setItem(50, MenuInteraction.createPaper("Перевести"));
+        menu.setItem(48, MenuInteraction.createPaper(ChatColor.GREEN+""+ChatColor.BOLD+"[\uD83D\uDCE7] Перевести"));
+        menu.setItem(49, MenuInteraction.createPaper(ChatColor.GREEN+""+ChatColor.BOLD+"[\uD83D\uDCE7] Перевести"));
+        menu.setItem(50, MenuInteraction.createPaper(ChatColor.GREEN+""+ChatColor.BOLD+"[\uD83D\uDCE7] Перевести"));
 
-        menu.setItem(45, MenuInteraction.createPaper("Назад"));
+        menu.setItem(45, MenuInteraction.createPaper(ChatColor.GRAY+"[↓] Назад"));
+
+        menu.setItem(52, MenuInteraction.createPaperLore(lore,ChatColor.GOLD+"Оплата комісії"));
 
         UUID uuid = player.getUniqueId();
 
@@ -98,7 +101,7 @@ public class Transfer implements Listener {
 
         // Додаємо гравців у слоти (з 1 по 7)
         for (int i = 0; i < subList.size(); i++) {
-            menu.setItem(i + 1, MenuInteraction.createPaper("§eГравцю: " + subList.get(i)));
+            menu.setItem(i + 1, MenuInteraction.createPaper(ChatColor.GOLD+ "Гравцю: " + ChatColor.WHITE+subList.get(i)));
         }
     }
 
@@ -118,62 +121,91 @@ public class Transfer implements Listener {
 
             UUID uuid = player.getUniqueId();
             String[] formated = displayName.split(" ");
-            if (displayName.startsWith("§e+")) {
+            if (displayName.startsWith(ChatColor.GREEN+"+")) {
                 player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 1, 1);
                 displayName = displayName.substring(3);
                 MenuInteraction.IncButtons(clickedInventory, Integer.parseInt(displayName), Material.DIAMOND_ORE);
             }
-            else if (displayName.startsWith("§e-")) {
+            else if (displayName.startsWith(ChatColor.YELLOW+"-")) {
                 player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 1, 1);
                 displayName = displayName.substring(3);
                 MenuInteraction.DicButtons(clickedInventory, Integer.parseInt(displayName), Material.DIAMOND_ORE);
             }
-            if (displayName.equals("§eПопередні")) {
+            if (ChatColor.stripColor(displayName).equals("[←] Попередні")) {
                 player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1, 1);
                 setListOfPlayers(getAllBankUsers(player), player, YourBank.getPluginContext().transferManager.getPlayerMenu(uuid), "minus");
 
             }
-            else if (displayName.equals("§eНаступні")) {
+            else if (ChatColor.stripColor(displayName).equals("[→] Наступні")) {
                 player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1, 1);
                 setListOfPlayers(getAllBankUsers(player), player, YourBank.getPluginContext().transferManager.getPlayerMenu(uuid), "plus");
             }
 
-            else if (displayName.startsWith("§eГравцю:")) {
+            else if (displayName.startsWith(ChatColor.GOLD+"Гравцю:")) {
                 YourBank.getPluginContext().transferManager.getPlayerMenu(uuid).setItem(40, MenuInteraction.createPaper(formated[1]));
             }
-            else if (displayName.equals("§eПеревести")) {
+            else if (ChatColor.stripColor(displayName).equals("[\uD83D\uDCE7] Перевести")) {
                 if (YourBank.getPluginContext().transferManager.getPlayerMenu(uuid).getItem(40) == null) {
-                    player.sendMessage(ChatColor.RED+"[Банк] Вибери отримувача");
+                    player.sendMessage(ChatColor.DARK_RED+""+ChatColor.BOLD+ "[Банк]"+
+                            ChatColor.RESET+ChatColor.RED+"Вибери отримувача");
                     return;
                 }
                 int sum = MenuInteraction.getAmountFromSlots(YourBank.getPluginContext().transferManager.getPlayerMenu(uuid));
                 if (sum == 0) {
-                    player.sendMessage(ChatColor.RED+"[Банк] Введи суму");
+                    player.sendMessage(ChatColor.DARK_RED+""+ChatColor.BOLD+ "[Банк]"+
+                            ChatColor.RESET+ChatColor.RED+" Введи суму");
                     return;
                 }
                 String[] data = Data.getPlayerData(player.getName());
                 if (Integer.parseInt(data[1]) < sum) {
-                    player.sendMessage(ChatColor.RED+"[Банк] Недостатньо коштів");
+                    player.sendMessage(ChatColor.DARK_RED+""+ChatColor.BOLD+ "[Банк]"+
+                            ChatColor.RESET+ChatColor.RED+" Недостатньо коштів");
                     return;
                 }
 
                 String receiver = Objects.requireNonNull(Objects.requireNonNull(YourBank.getPluginContext().transferManager
                         .getPlayerMenu(uuid).getItem(40)).getItemMeta()).getDisplayName();
 
-                if (Data.getPlayersBank(receiver)) {
-                    if (Data.makeTransaction(receiver, player.getName(), sum)) {
-                        player.sendMessage(ChatColor.GREEN+"[Банк] Переведення коштів успішне");
+                if (Data.getPlayersBank(receiver.replace("§f", ""))) {
+                    Boolean payCommission = YourBank.pluginContext.transferManager.getPayCommissionChoose(uuid);
+                    if (Data.makeTransaction(receiver.replace("§f", ""), player.getName(), sum, payCommission)) {
+                        player.sendMessage(ChatColor.DARK_GREEN+""+ChatColor.BOLD+ "[Банк]"+
+                                ChatColor.RESET+ChatColor.GREEN+" Переведення коштів успішне");
                     }
                     else {
-                        player.sendMessage(ChatColor.RED+"[Банк] У тебе недостатньо коштів");
+                        player.sendMessage(ChatColor.DARK_RED+""+ChatColor.BOLD+ "[Банк]"+
+                                ChatColor.RESET+ChatColor.RED+" Недостатньо коштів");
                     }
                     player.closeInventory();
                 }
                 else {
-                    event.getWhoClicked().sendMessage(ChatColor.RED+"[Банк] У цього гравця немає банківського рахунку");
+                    System.out.println("receiver: "+receiver);
+                    event.getWhoClicked().sendMessage(ChatColor.DARK_RED+""+ChatColor.BOLD+ "[Банк]"+
+                            ChatColor.RESET+ChatColor.RED+" У цього гравця немає банківського рахунку");
                 }
             }
-            else if (displayName.equals("§eНазад")) {
+            else if (ChatColor.stripColor(displayName).equals("Оплата комісії")) {
+                Boolean choose = YourBank.getPluginContext().transferManager.getPayCommissionChoose(uuid);
+                YourBank.pluginContext.transferManager.addPayCommissionChoose(
+                        uuid,
+                        !choose
+                );
+                choose = !choose;
+                ItemStack item =  event.getView().getItem(52);
+                ItemMeta meta = item.getItemMeta();
+                List<String> lore = new ArrayList<>();
+                if (choose) {
+                    lore.add(ChatColor.GREEN+"Увімкнено!");
+                    assert meta != null;
+                    meta.setLore(lore);
+                }
+                else {
+                    lore.add(ChatColor.RED+"Вимкнено!");
+                    meta.setLore(lore);
+                }
+                item.setItemMeta(meta);
+            }
+            else if (ChatColor.stripColor(displayName).equals("[↓] Назад")) {
                 player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1, 1);
                 player.closeInventory();
                 Bukkit.getScheduler().runTaskLater(YourBank.getInstance(), () -> {
@@ -187,6 +219,7 @@ public class Transfer implements Listener {
         if (event.getView().getTitle().equals("Переведення")) {
             YourBank.getPluginContext().transferManager.removePlayerPage(event.getPlayer().getUniqueId());
             YourBank.getPluginContext().transferManager.removePlayerMenu(event.getPlayer().getUniqueId());
+            YourBank.getPluginContext().transferManager.removeFromPayCommissionChoose(event.getPlayer().getUniqueId());
         }
 
     }

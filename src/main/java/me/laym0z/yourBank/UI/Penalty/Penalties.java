@@ -1,19 +1,20 @@
 package me.laym0z.yourBank.UI.Penalty;
 
-import me.laym0z.yourBank.Data.Data;
-import me.laym0z.yourBank.Test.PrintHashMaps;
+import me.laym0z.yourBank.Data.TempStorage.SQLQueries.Data;
 import me.laym0z.yourBank.UI.Bank.BankMain;
 import me.laym0z.yourBank.UI.MenuComponents.MenuInteraction;
 import me.laym0z.yourBank.YourBank;
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
-import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
+import org.jetbrains.annotations.NotNull;
+
 import java.util.*;
 
 public class Penalties implements Listener {
@@ -23,9 +24,9 @@ public class Penalties implements Listener {
         UUID uuid = admin.getUniqueId();
 
         Inventory menu = Bukkit.createInventory(null, 27, "Список штрафів");
-        menu.setItem(18, MenuInteraction.createPaper("Назад"));
-        menu.setItem(9, MenuInteraction.createPaper("Попередня сторінка"));
-        menu.setItem(17, MenuInteraction.createPaper("Наступна сторінка"));
+        menu.setItem(18, MenuInteraction.createPaper(ChatColor.GRAY+"[↓] Назад"));
+        menu.setItem(9, MenuInteraction.createPaper(ChatColor.GOLD+"[←] Попередня сторінка"));
+        menu.setItem(17, MenuInteraction.createPaper(ChatColor.GOLD+"[→] Наступна сторінка"));
         menu.setItem(2, MenuInteraction.createPaper(owner));
 
         YourBank.getPluginContext().penaltiesManager.setPenaltiesPerPlayer(uuid, Data.getAllPenaltiesOfPlayer(owner));
@@ -58,18 +59,25 @@ public class Penalties implements Listener {
             if (index >= penalties.size()) {
                 break;
             }
-            List<String> penalty = penalties.get(index);
-            List<String> lore = new ArrayList<>();
+            List<String> lore = getStringList(penalties, index);
 
-            lore.add("ID: "+penalty.get(0));
-            lore.add("Сума: "+penalty.get(2));
-            lore.add("Причина: "+penalty.get(3));
-            lore.add("Дата створення: "+penalty.get(4));
-            lore.add("Термін виплати: "+penalty.get(5));
-
-            menu.setItem(i+10, MenuInteraction.createPaperLore(lore, "Штраф"));
+            menu.setItem(i+10, MenuInteraction.createPaperLore(lore, ChatColor.GOLD+"Штраф"));
             index++;
         }
+    }
+
+    @NotNull
+    private static List<String> getStringList(List<List<String>> penalties, int index) {
+        List<String> penalty = penalties.get(index);
+        List<String> lore = new ArrayList<>();
+
+        lore.add(ChatColor.GOLD+"ID: "+ChatColor.WHITE+penalty.get(0));
+        lore.add(ChatColor.GOLD+"Сума: "+ChatColor.WHITE+penalty.get(2));
+        lore.add(ChatColor.GOLD+"Причина: "+ChatColor.WHITE+penalty.get(3));
+        lore.add(ChatColor.GOLD+"Дата створення: "+ChatColor.WHITE+penalty.get(4));
+        lore.add(ChatColor.GOLD+"Термін виплати: "+ChatColor.WHITE+penalty.get(5));
+        lore.add(ChatColor.GOLD+"Отримувач: "+ChatColor.WHITE+penalty.get(6));
+        return lore;
     }
 
     @EventHandler
@@ -84,41 +92,41 @@ public class Penalties implements Listener {
             if (item==null) return;
             String displayName = Objects.requireNonNull(item.getItemMeta()).getDisplayName();
             UUID uuid = player.getUniqueId();
-            switch (displayName) {
-                case "§eПопередня сторінка" -> {
-                    player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1, 1);
-                    displayPenalties(YourBank.getPluginContext().penaltiesManager.getPlayerMenu(uuid), "-", uuid);
-                }
-                case "§eНаступна сторінка" -> {
-                    player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1, 1);
-                    displayPenalties(YourBank.getPluginContext().penaltiesManager.getPlayerMenu(uuid), "+", uuid);
-                }
-                case "§eШтраф" -> {
-                    List<String> lore = item.getItemMeta().getLore();
+            if (ChatColor.stripColor(displayName).equals("[←] Попередня сторінка")) {
+                player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1, 1);
+                displayPenalties(YourBank.getPluginContext().penaltiesManager.getPlayerMenu(uuid), "-", uuid);
+            }
+            else if (ChatColor.stripColor(displayName).equals("[→] Наступна сторінка")) {
+                player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1, 1);
+                displayPenalties(YourBank.getPluginContext().penaltiesManager.getPlayerMenu(uuid), "+", uuid);
+            }
+            else if (ChatColor.stripColor(displayName).equals("Штраф")) {
+                List<String> lore = item.getItemMeta().getLore();
 
-                    String idString = lore.get(0);
-                    String sumString = lore.get(1);
+                String idString = lore.get(0);
+                String sumString = lore.get(1);
+                String receiver = lore.get(5);
 
-                    int ID = Integer.parseInt(idString.replace("ID: ", ""));
-                    int sum = Integer.parseInt(sumString.replace("Сума: ", ""));
-                    String name = YourBank.getPluginContext().penaltiesManager.getPlayerMenu(uuid).getItem(2).getItemMeta().getDisplayName().substring(2);
-                    if (name.equals(player.getName())) {
-                        Bukkit.getScheduler().runTaskLater(YourBank.getInstance(), () -> {
-                            PenaltyAgreement.openPenaltyAgreementMenu(ID, sum, player);
-                        }, 1L); // 1 тік затримки
-                    } else if (YourBank.pluginContext.penaltiesManager.getToRemove(uuid)) {
-                        Bukkit.getScheduler().runTaskLater(YourBank.getInstance(), () -> {
-                            RemovePenaltyAgreement.openRemovePenaltyAgreementMenu(ID, sum, player);
-                        }, 1L); // 1 тік затримки
-                    }
-                }
-                case "§eНазад" -> {
-                    player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1, 1);
-                    player.closeInventory();
+                int ID = Integer.parseInt(ChatColor.stripColor(idString.replace("ID: ", "")));
+                int sum = Integer.parseInt(ChatColor.stripColor(sumString.replace("Сума: ", "")));
+                String receiverFormated = ChatColor.stripColor(receiver.replace("Отримувач: ", ""));
+                String name = YourBank.getPluginContext().penaltiesManager.getPlayerMenu(uuid).getItem(2).getItemMeta().getDisplayName();
+                if (name.equals(player.getName())) {
                     Bukkit.getScheduler().runTaskLater(YourBank.getInstance(), () -> {
-                        BankMain.openBankMenu(player, Data.getPlayerData(player.getName()));
+                        PenaltyAgreement.openPenaltyAgreementMenu(ID, sum, player, receiverFormated);
+                    }, 1L); // 1 тік затримки
+                } else if (YourBank.pluginContext.penaltiesManager.getToRemove(uuid)) {
+                    Bukkit.getScheduler().runTaskLater(YourBank.getInstance(), () -> {
+                        RemovePenaltyAgreement.openRemovePenaltyAgreementMenu(ID, sum, player);
                     }, 1L); // 1 тік затримки
                 }
+            }
+            else if (ChatColor.stripColor(displayName).equals("[↓] Назад")) {
+                player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1, 1);
+                player.closeInventory();
+                Bukkit.getScheduler().runTaskLater(YourBank.getInstance(), () -> {
+                    BankMain.openBankMenu(player, Data.getPlayerData(player.getName()));
+                }, 1L); // 1 тік затримки
             }
         }
     }
