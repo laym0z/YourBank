@@ -1,7 +1,9 @@
 package me.laym0z.yourBank.UI.Bank;
 
 import me.laym0z.yourBank.Data.DB.Database;
+import me.laym0z.yourBank.UI.MenuComponents.Buttons.BankForBankerButtons;
 import me.laym0z.yourBank.UI.MenuComponents.MenuInteraction;
+import me.laym0z.yourBank.UI.Titles;
 import me.laym0z.yourBank.YourBank;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -13,37 +15,26 @@ import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 
+import java.util.Map;
 import java.util.Objects;
 
 public class BankForBanker implements Listener {
-    public static void openBankMenu(Player banker, String owner) {
+    public static void openBankForBankerMenu(Player banker, String owner) {
+
         Database Database = new Database(YourBank.getDatabaseConnector());
         String[] data = Database.getPlayerData(owner);
+        Map<Integer, String> buttons = BankForBankerButtons.get();
 
-        banker.closeInventory();
-        Inventory menu = Bukkit.createInventory(null, 36, "Меню банкіра");
-        menu.setItem(11, MenuInteraction.createPaper(ChatColor.GREEN+""+ChatColor.BOLD + "[↑] Поповнити рахунок"));
-        menu.setItem(12, MenuInteraction.createPaper(ChatColor.GREEN+""+ChatColor.BOLD + "[↑] Поповнити рахунок"));
-        menu.setItem(20, MenuInteraction.createPaper(ChatColor.GREEN+""+ChatColor.BOLD + "[↑] Поповнити рахунок"));
-        menu.setItem(21, MenuInteraction.createPaper(ChatColor.GREEN+""+ChatColor.BOLD + "[↑] Поповнити рахунок"));
+        Inventory menu = Bukkit.createInventory(null, 36, Titles.BANKER_MENU_TITLE);
 
-        menu.setItem(4, MenuInteraction.createPaper(format(Integer.parseInt(data[1]), "ДР")));
-        menu.setItem(14, MenuInteraction.createPaper(ChatColor.GREEN+""+ChatColor.BOLD +"[↓] Зняти кошти"));
-        menu.setItem(15, MenuInteraction.createPaper(ChatColor.GREEN+""+ChatColor.BOLD +"[↓] Зняти кошти"));
-        menu.setItem(23, MenuInteraction.createPaper(ChatColor.GREEN+""+ChatColor.BOLD +"[↓] Зняти кошти"));
-        menu.setItem(24, MenuInteraction.createPaper(ChatColor.GREEN+""+ChatColor.BOLD +"[↓] Зняти кошти"));
+        menu.setItem(4, MenuInteraction.createPaper(MenuInteraction.formatAmountOfDiamonds(Integer.parseInt(data[1]), "ДР")));
+
+        for (Map.Entry<Integer, String> entry : buttons.entrySet()) {
+            menu.setItem(entry.getKey(), MenuInteraction.createPaper(entry.getValue()));
+        }
 
         YourBank.getPluginContext().sessionManager.setReceiver(banker.getUniqueId(), owner);
         banker.openInventory(menu);
-    }
-
-    public static String format(int amount, String type) {
-        int t = amount % 64;
-        if (t != 0) {
-            int stacks = (amount-(amount % 64))/64;
-            return amount+" "+type+" | "+stacks+" ст. та "+t+" "+type;
-        }
-        return amount+" "+type+" | "+amount/64+" ст. ";
     }
 
     @EventHandler
@@ -52,20 +43,19 @@ public class BankForBanker implements Listener {
         Inventory clickedInventory = event.getClickedInventory();
         if (clickedInventory == null) return;
 
-        if (event.getView().getTitle().equals("Меню банкіра")) {
+        if (event.getView().getTitle().equals(Titles.BANKER_MENU_TITLE)) {
             event.setCancelled(true);
             ItemStack clickedItem = event.getCurrentItem();
             if (clickedItem == null || !clickedItem.hasItemMeta()) return;
             String displayName = Objects.requireNonNull(clickedItem.getItemMeta()).getDisplayName();
 
-
-            if (ChatColor.stripColor(displayName).equals("[↑] Поповнити рахунок")) {
+            if (displayName.equals(BankForBankerButtons.getDepositButton())) {
                 player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1, 1);
                 player.closeInventory();
-
                 Bukkit.getScheduler().runTaskLater(YourBank.getInstance(), () -> Deposit.openDepositMenu(player), 1L); // 1 тік затримки
             }
-            else if (ChatColor.stripColor(displayName).equals("[↓] Зняти кошти")) {
+
+            else if (displayName.equals(BankForBankerButtons.getWithdrawButton())) {
                 Database Database = new Database(YourBank.getDatabaseConnector());
                 if (Database.isPlayerBlocked(player.getName())) {
                     player.sendMessage(ChatColor.DARK_RED+""+ChatColor.BOLD+ "[Банк]"+
@@ -79,4 +69,5 @@ public class BankForBanker implements Listener {
             }
         }
     }
+
 }

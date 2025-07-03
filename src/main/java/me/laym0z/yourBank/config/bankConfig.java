@@ -35,6 +35,7 @@ public class bankConfig {
         String perTransaction = config.getString("diamond_ore_tax");
 
         try {
+            assert exchangeRate != null;
             exchangeRateInt = Integer.parseInt(exchangeRate);
             if (exchangeRateInt<1) exchangeRateInt=2;
         }catch (Exception e) {
@@ -43,6 +44,7 @@ public class bankConfig {
         }
 
         try {
+            assert perTransaction != null;
             perTransactionDouble = Double.parseDouble(perTransaction);
             if (perTransactionDouble < 0 || perTransactionDouble > 100) {
                 perTransactionDouble = 0.02;

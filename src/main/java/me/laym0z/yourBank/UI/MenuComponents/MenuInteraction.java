@@ -2,75 +2,28 @@ package me.laym0z.yourBank.UI.MenuComponents;
 
 import me.laym0z.yourBank.Data.DB.Database;
 import me.laym0z.yourBank.YourBank;
+import org.bukkit.ChatColor;
 import org.bukkit.Material;
+import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.jetbrains.annotations.NotNull;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 public class MenuInteraction {
 
-    static int[] incSlots = {10, 11, 12, 13, 14, 15, 16};
-    static int[] dicSlots = {16, 15, 14, 13, 12, 11, 10};
+    static int[] slots = {10, 11, 12, 13, 14, 15, 16};
 
-    public static void IncButtons(Inventory inv, int amount, Material type) {
-
-        for (int slot : incSlots) {
-            ItemStack item = inv.getItem(slot);
-
-            // Порожній слот
-            if (item == null || item.getType() == Material.AIR) {
-                int toAdd = Math.min(amount, 64);
-                inv.setItem(slot, new ItemStack(type, toAdd));
-                amount -= toAdd;
-            }
-
-            // Якщо вже є діаманти
-            else if (item.getType() == type) {
-                int current = item.getAmount();
-                int space = 64 - current;
-
-                if (space > 0) {
-                    int toAdd = Math.min(space, amount);
-                    item.setAmount(current + toAdd);
-                    amount -= toAdd;
-                }
-            }
-
-            // Перевірка чи додано все
-            if (amount <= 0) break;
-        }
-    }
-
-    public static void DicButtons(Inventory inv, int amount, Material type){
-
-        for (int slot : dicSlots) {
-            ItemStack item = inv.getItem(slot);
-
-            if (item == null || item.getType() != type) {
-                continue; // Порожній слот або не діамант
-            }
-
-            int current = item.getAmount();
-
-            if (current <= amount) {
-                amount -= current;
-                inv.setItem(slot, null);
-            } else {
-                item.setAmount(current - amount);
-                amount = 0;
-            }
-
-            if (amount <= 0) break;
-        }
+    public enum listAction {
+        NEXT,
+        PREV,
+        NOTHING
     }
 
     public static void Convert(Inventory inv, Material type) {
-        for (int slot : incSlots) {
+        for (int slot : slots) {
             if (inv.getItem(slot) == null) return;
             int amount = Objects.requireNonNull(inv.getItem(slot)).getAmount();
             inv.setItem(slot, new ItemStack(type, amount));
@@ -79,7 +32,7 @@ public class MenuInteraction {
 
     public static int getAmountFromSlots(Inventory menu) {
         int amount = 0;
-        for (int slot : incSlots) {
+        for (int slot : slots) {
             ItemStack item = menu.getItem(slot);
             if (item != null) amount += item.getAmount();
             else break;
@@ -95,13 +48,13 @@ public class MenuInteraction {
             return result;
         }
         int amount = 0;
-        for (int slot : incSlots) {
+        for (int slot : slots) {
             ItemStack item = menu.getItem(slot);
             if (item != null) amount += item.getAmount();
             else break;
         }
         if (amount ==1 && type == Material.DEEPSLATE_DIAMOND_ORE) {
-            result.put(0, "[Банк] Кількість ллибинної діамантової рудимає бути як мінімум 2");
+            result.put(0, "[Банк] Кількість глибинної діамантової руди має бути як мінімум 2");
         }
         if (type==Material.DEEPSLATE_DIAMOND_ORE && amount%2==1) amount -= 1;
         System.out.println("Amount: "+amount);
@@ -144,20 +97,6 @@ public class MenuInteraction {
 
         result = Database.addToBalance(typeString, name, temp);
         return result;
-        /*
-        перебрати всі речі в інвентраі гравця та знайти діаманти за типом та запам'ятати індекс слоту
-        якщо діамантів мало, вивести помилку
-
-        ---
-
-        якщо діамантів вистачило
-
-        забрати з записаних слотів потрібну кількість
-            якщо потреба більше, ніж в слоті - почистити слот та відняти ту суму слоту від потреби
-            якщо потреба менше, ніж в слоті - від слота віднімається потреба, а потреба дорівнює нулю
-
-        Відбувається запит до бази даних на оновлення кількості віртуальної валюти (Реалізувати метод в Database)
-        */
     }
 
     public static HashMap<Integer, String> ConfirmWithdraw(Inventory menu, Inventory playerInv, Material type, String name) {
@@ -171,7 +110,7 @@ public class MenuInteraction {
             result.put(0, "[Банк] Введіть суму");
             return result;
         }
-        for (int slot : incSlots) {
+        for (int slot : slots) {
             ItemStack item = menu.getItem(slot);
             if (item != null && item.getType()==type) {
                 menuCount++;
@@ -238,5 +177,115 @@ public class MenuInteraction {
         return paper;
     }
 
+    public static String formatAmountOfDiamonds(int amount, String type) {
+        int t = amount % 64;
+        if (t != 0) {
+            int stacks = (amount-(amount % 64))/64;
+            return amount+" "+type+" | "+stacks+" ст. та "+t+" "+type;
+        }
+        return amount+" "+type+" | "+amount/64+" ст. ";
+    }
 
+    public static ItemStack createTopPlayers(List<List<String>> names) {
+        ItemStack paper = new ItemStack(Material.PAPER);
+        ItemMeta meta = paper.getItemMeta();
+        List<String> lore = new ArrayList<>();
+        if (meta != null) {
+            meta.setDisplayName(ChatColor.GOLD+""+ChatColor.BOLD+"Топ 3:"); // §e — жовтий текст
+            for (int i = 0; i < 3; i++) {
+                if (i < names.size()) {
+                    lore.add(ChatColor.WHITE+""+(i+1)+". "+names.get(i).get(0)+": "+names.get(i).get(1)+" ДР");
+                }
+                else {
+                    lore.add(ChatColor.GRAY+"-");
+                }
+            }
+            meta.setLore(lore);
+            paper.setItemMeta(meta);
+        }
+        return paper;
+    }
+
+    public static List<List<String>> getAllBankUsers(Player mainPlayer) {
+        Database Database = new Database(YourBank.getDatabaseConnector());
+        List <String> allNames = Database.getAllPlayers(mainPlayer.getName());
+        List<List<String>> grouped = new ArrayList<>();
+
+        //--------TEST--------
+//        for (int i = 0; i <= 20; i++) {
+//            allNames.add(String.valueOf(i));
+//        }
+        //--------------------
+
+        int groupSize = 7;
+        for (int i = 0; i < allNames.size(); i += groupSize) {
+            int end = Math.min(i + groupSize, allNames.size());
+            grouped.add(allNames.subList(i, end));
+        }
+        return grouped;
+    }
+
+    public static void setListOfPlayers(Player player, Inventory menu, listAction action) {
+        List<List<String>> players = getAllBankUsers(player);
+        int indexOfPlayerInSubList = YourBank.getPluginContext().transferManager.getPlayerPage(player.getUniqueId());
+        if (Objects.equals(action, listAction.NEXT) && indexOfPlayerInSubList+1 < players.size()) indexOfPlayerInSubList++;
+        else if (Objects.equals(action, listAction.PREV) && indexOfPlayerInSubList-1 >= 0) indexOfPlayerInSubList--;
+
+        // Перевірка виходу за межі
+        if (indexOfPlayerInSubList < 0 || indexOfPlayerInSubList >= players.size()) return;
+
+
+        List<String> subList = players.get(indexOfPlayerInSubList);
+
+        // Очищаємо старі слоти, якщо потрібно
+        for (int i = 1; i <= 7; i++) {
+            menu.setItem(i, null);
+        }
+
+        // Додаємо гравців у слоти (з 1 по 7)
+        for (int i = 0; i < subList.size(); i++) {
+            menu.setItem(i + 1, MenuInteraction.createPaper(ChatColor.GOLD+ "Гравцю: " + ChatColor.WHITE+subList.get(i)));
+        }
+    }
+
+    public static void displayPenalties(Inventory menu, listAction action, UUID uuid) {
+        List<List<String>> penalties = YourBank.getPluginContext().penaltiesManager.getPenaltiesPerPlayer(uuid);
+        int index = YourBank.getPluginContext().penaltiesManager.getPlayerPage(uuid);
+
+        if (Objects.equals(action, listAction.PREV) && index - 7 >= 0) {
+            index-=7;
+            YourBank.getPluginContext().penaltiesManager.setPlayerPage(uuid, index);
+        }
+        else if (Objects.equals(action, listAction.NEXT) && index + 7 < penalties.size()) {
+            index+=7;
+            YourBank.getPluginContext().penaltiesManager.setPlayerPage(uuid, index);
+        }
+        for (int i = 10; i < 17; i++) {
+            menu.setItem(i, null);
+        }
+        for (int i = 0; i < penalties.size(); i++ ) {
+            if (i == 7) break;
+            if (index >= penalties.size()) {
+                break;
+            }
+            List<String> lore = getStringList(penalties, index);
+
+            menu.setItem(i+10, MenuInteraction.createPaperLore(lore, ChatColor.GOLD+"Штраф"));
+            index++;
+        }
+    }
+
+    @NotNull
+    private static List<String> getStringList(List<List<String>> penalties, int index) {
+        List<String> penalty = penalties.get(index);
+        List<String> lore = new ArrayList<>();
+
+        lore.add(ChatColor.GOLD+"ID: "+ChatColor.WHITE+penalty.get(0));
+        lore.add(ChatColor.GOLD+"Сума: "+ChatColor.WHITE+penalty.get(2));
+        lore.add(ChatColor.GOLD+"Причина: "+ChatColor.WHITE+penalty.get(3));
+        lore.add(ChatColor.GOLD+"Дата створення: "+ChatColor.WHITE+penalty.get(4));
+        lore.add(ChatColor.GOLD+"Термін виплати: "+ChatColor.WHITE+penalty.get(5));
+        lore.add(ChatColor.GOLD+"Отримувач: "+ChatColor.WHITE+penalty.get(6));
+        return lore;
+    }
 }

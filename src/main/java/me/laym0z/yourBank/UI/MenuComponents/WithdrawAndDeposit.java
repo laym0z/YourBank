@@ -1,6 +1,9 @@
 package me.laym0z.yourBank.UI.MenuComponents;
 
 import me.laym0z.yourBank.UI.Bank.BankForBanker;
+import me.laym0z.yourBank.UI.MenuComponents.Buttons.ChangeAmountButtons;
+import me.laym0z.yourBank.UI.MenuComponents.Buttons.WithdrawAndDepositButtons;
+import me.laym0z.yourBank.UI.Titles;
 import me.laym0z.yourBank.YourBank;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -13,7 +16,10 @@ import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
+
+import java.io.PrintStream;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 
 public class WithdrawAndDeposit implements Listener {
@@ -24,26 +30,22 @@ public class WithdrawAndDeposit implements Listener {
         menu.setItem(3, MenuInteraction.createPaper(ChatColor.GOLD+ "ДР"));// diamond_ore
 
         menu.setItem(5, MenuInteraction.createPaper(ChatColor.GOLD+ "ГДР"));//deep_diamond_ore
-        //Додати
-        menu.setItem(20, MenuInteraction.createPaper(ChatColor.GREEN+ "+1"));
-        menu.setItem(21, MenuInteraction.createPaper(ChatColor.GREEN+ "+4"));
-        menu.setItem(22, MenuInteraction.createPaper(ChatColor.GREEN+"+8"));
-        menu.setItem(23, MenuInteraction.createPaper(ChatColor.GREEN+"+16"));
-        menu.setItem(24, MenuInteraction.createPaper(ChatColor.GREEN+"+32"));
-        menu.setItem(25, MenuInteraction.createPaper(ChatColor.GREEN+"+64"));
-        //Відняти
-        menu.setItem(29, MenuInteraction.createPaper(ChatColor.YELLOW+"-1"));
-        menu.setItem(30, MenuInteraction.createPaper(ChatColor.YELLOW+"-4"));
-        menu.setItem(31, MenuInteraction.createPaper(ChatColor.YELLOW+"-8"));
-        menu.setItem(32, MenuInteraction.createPaper(ChatColor.YELLOW+"-16"));
-        menu.setItem(33, MenuInteraction.createPaper(ChatColor.YELLOW+"-32"));
-        menu.setItem(34, MenuInteraction.createPaper(ChatColor.YELLOW+"-64"));
-        //підтвердити
-        menu.setItem(48, MenuInteraction.createPaper(ChatColor.GREEN+"Підтвердити"));
-        menu.setItem(49, MenuInteraction.createPaper(ChatColor.GREEN+"Підтвердити"));
-        menu.setItem(50, MenuInteraction.createPaper(ChatColor.GREEN+"Підтвердити"));
 
-        menu.setItem(45, MenuInteraction.createPaper(ChatColor.GRAY+"[↓] Назад"));
+        Map<Integer, String> addButtons = WithdrawAndDepositButtons.getAddButtons();
+        Map <Integer, String> deductButtons = WithdrawAndDepositButtons.getDeductButtons();
+        Map <Integer, String> applyButtons = WithdrawAndDepositButtons.getApplyButtons();
+
+        for (Map.Entry<Integer, String> entry : addButtons.entrySet()) {
+            menu.setItem(entry.getKey(), MenuInteraction.createPaper(entry.getValue()));
+        }
+        for (Map.Entry<Integer, String> entry : deductButtons.entrySet()) {
+            menu.setItem(entry.getKey(), MenuInteraction.createPaper(entry.getValue()));
+        }
+        for (Map.Entry<Integer, String> entry : applyButtons.entrySet()) {
+            menu.setItem(entry.getKey(), MenuInteraction.createPaper(entry.getValue()));
+        }
+
+        menu.setItem(45, MenuInteraction.createPaper(WithdrawAndDepositButtons.getGoBackButton()));
 
         YourBank.getPluginContext().diamondChoose.setChoose(admin.getUniqueId(), Material.DIAMOND_ORE);
 
@@ -52,7 +54,8 @@ public class WithdrawAndDeposit implements Listener {
     }
     @EventHandler
     public static void InventoryClickEvent(InventoryClickEvent event) {
-        if (event.getView().getTitle().equals("Поповнення") || event.getView().getTitle().equals("Зняти")) {
+        if (event.getView().getTitle().equals(Titles.DEPOSIT_TITLE) ||
+                event.getView().getTitle().equals(Titles.WITHDRAW_TITLE)) {
             event.setCancelled(true); // Забороняємо забирати предмет
             Inventory clickedInventory = event.getClickedInventory();
 
@@ -64,14 +67,16 @@ public class WithdrawAndDeposit implements Listener {
             if (clickedItem == null || !clickedItem.hasItemMeta()) return;
             UUID uuid = player.getUniqueId();
             String displayName = clickedItem.getItemMeta().getDisplayName();
-            if (displayName.startsWith(ChatColor.GREEN+"+")) {
+            if (ChatColor.stripColor(displayName).startsWith("+")) {
                 player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 1, 1);
-                displayName = displayName.substring(3);
-                MenuInteraction.IncButtons(clickedInventory, Integer.parseInt(displayName), YourBank.getPluginContext().diamondChoose.getChoose(uuid));
-            } else if (displayName.startsWith(ChatColor.YELLOW+"-")) {
+                displayName = ChatColor.stripColor(displayName);
+                displayName = displayName.substring(1);
+                ChangeAmountButtons.IncButtons(clickedInventory, Integer.parseInt(displayName), YourBank.getPluginContext().diamondChoose.getChoose(uuid));
+            } else if (ChatColor.stripColor(displayName).startsWith("-")) {
                 player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 1, 1);
-                displayName = displayName.substring(3);
-                MenuInteraction.DicButtons(clickedInventory, Integer.parseInt(displayName), YourBank.getPluginContext().diamondChoose.getChoose(uuid));
+                displayName = ChatColor.stripColor(displayName);
+                displayName = displayName.substring(1);
+                ChangeAmountButtons.DicButtons(clickedInventory, Integer.parseInt(displayName), YourBank.getPluginContext().diamondChoose.getChoose(uuid));
             }
             if (ChatColor.stripColor(displayName).equals("ДР")) {
                 player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1, 1);
@@ -83,19 +88,19 @@ public class WithdrawAndDeposit implements Listener {
                 YourBank.getPluginContext().diamondChoose.setChoose(uuid, Material.DEEPSLATE_DIAMOND_ORE);
                 MenuInteraction.Convert(clickedInventory, Material.DEEPSLATE_DIAMOND_ORE);
             }
-            else if (ChatColor.stripColor(displayName).equals("[↓] Назад")) {
+            else if (displayName.equals(WithdrawAndDepositButtons.getGoBackButton())) {
                 player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1, 1);
                 player.closeInventory();
                 Bukkit.getScheduler().runTaskLater(YourBank.getInstance(), () -> {
-                    BankForBanker.openBankMenu(player, YourBank.getPluginContext().sessionManager.getReceiver(uuid));
+                    BankForBanker.openBankForBankerMenu(player, YourBank.getPluginContext().sessionManager.getReceiver(uuid));
                 }, 1L); // 1 тік затримки
             }
-            else if (ChatColor.stripColor(displayName).equals("Підтвердити")) {
+            else if (displayName.equals(WithdrawAndDepositButtons.getApplyButton())) {
                 HashMap<Integer, String> result = new HashMap<>();
-                if (event.getView().getTitle().equals("Зняти")) {
+                if (event.getView().getTitle().equals(Titles.WITHDRAW_TITLE)) {
                     result = MenuInteraction.ConfirmWithdraw(clickedInventory,
                             player.getInventory(), YourBank.getPluginContext().diamondChoose.getChoose(uuid), YourBank.getPluginContext().sessionManager.getReceiver(uuid));
-                } else if (event.getView().getTitle().equals("Поповнення")) {
+                } else if (event.getView().getTitle().equals(Titles.DEPOSIT_TITLE)) {
                     result = MenuInteraction.ConfirmDeposit(clickedInventory,
                             player.getInventory(), YourBank.getPluginContext().diamondChoose.getChoose(uuid), YourBank.getPluginContext().sessionManager.getReceiver(uuid));
                 }
@@ -114,7 +119,7 @@ public class WithdrawAndDeposit implements Listener {
     @EventHandler
     public static void onInventoryClose(InventoryCloseEvent event) {
         String title = event.getView().getTitle();
-        if (title.equals("Поповнення") || title.equals("Зняти")) {
+        if (title.equals(Titles.DEPOSIT_TITLE) || title.equals(Titles.WITHDRAW_TITLE)) {
             YourBank.pluginContext.diamondChoose.removeChoose(event.getPlayer().getUniqueId());
         }
     }

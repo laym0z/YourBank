@@ -19,7 +19,7 @@ public class BankMenu implements CommandExecutor {
             return false;
         }
         if (Database.getPlayersBank(args[0])) {
-            BankForBanker.openBankMenu(banker, args[0]);
+            BankForBanker.openBankForBankerMenu(banker, args[0]);
         }
         else {
             commandSender.sendMessage(ChatColor.DARK_RED+""+ChatColor.BOLD+ "[Банк]"+

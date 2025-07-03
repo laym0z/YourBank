@@ -23,23 +23,31 @@ public class Penalty implements CommandExecutor, TabCompleter {
     @Override
     public boolean onCommand(@NotNull CommandSender commandSender, @NotNull Command command, @NotNull String s, String[] args) {
         Database database = new Database(YourBank.getDatabaseConnector());
+
+
         if (args.length == 0) {
             commandSender.sendMessage(ChatColor.DARK_RED+""+ChatColor.BOLD+ "[Штрафи]"+
                     ChatColor.RESET+ChatColor.RED+" Введи дані");
             return true;
+
+
         }
         if (args.length < 6 && args[0].equals("add")) {
             commandSender.sendMessage(ChatColor.DARK_RED+""+ChatColor.BOLD+ "[Штрафи]"+
                     ChatColor.RESET+ChatColor.RED+" Дані введені не вірно");
             return false;
         }
+
+
         //ADD
         if (args.length >= 5 && args[0].equals("add")) {
+
             int amount;
-            String termPayment;
-            String name = args[1];
-            termPayment = args[3];
             String receiver;
+
+            String name = args[1];
+            String termPayment = args[3];
+
             if (!database.hasPlayedBefore(name)) {
                 commandSender.sendMessage(String.format(ChatColor.DARK_RED+""+ChatColor.BOLD+ "[Штрафи]"+
                         ChatColor.RESET+ChatColor.RED+" Гравця %s не існує!", name));
@@ -58,7 +66,6 @@ public class Penalty implements CommandExecutor, TabCompleter {
                         ChatColor.RESET+ChatColor.RED+" Дата має вводитися в наступному форматі: YYYY-MM-DD \nПриклад: "+ChatColor.GOLD+"2025-01-01");
                 return true;
             }
-
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
             LocalDate parsedDate;
             try {
@@ -93,7 +100,7 @@ public class Penalty implements CommandExecutor, TabCompleter {
 
             StringBuilder reason = new StringBuilder();
 
-            for (int i = 4; i<args.length; i++) {
+            for (int i = 5; i<args.length; i++) {
                 reason.append(args[i]).append(" ");
             }
 
@@ -104,6 +111,8 @@ public class Penalty implements CommandExecutor, TabCompleter {
                     ChatColor.RESET+ChatColor.GREEN+" Гравцю %s був виписаний штраф на суму %d ДР", name, amount));
             return true;
         }
+
+
         //LIST
         else if (args.length == 2 && args[0].equals("list")) {
             if (!database.doesPlayerHavePenalties(args[1])) {
@@ -113,6 +122,8 @@ public class Penalty implements CommandExecutor, TabCompleter {
             }
             Penalties.openPenaltyListMenu((Player) commandSender, args[1], false);
         }
+
+
         //REMOVE
         else if (args.length == 2 && args[0].equals("remove")) {
             if (!database.doesPlayerHavePenalties(args[1])) {
@@ -162,7 +173,7 @@ public class Penalty implements CommandExecutor, TabCompleter {
         }
         //4 argument
         else if (strings.length == 4 && strings[0].equals("add")) {
-            return List.of("<термін виплати DD-MM-YYYY>");
+            return List.of("<термін виплати YYYY-MM-DD>");
         }
         //5 argument
         else if (strings.length == 5 && strings[0].equals("add")) {
