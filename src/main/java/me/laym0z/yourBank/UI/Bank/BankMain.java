@@ -1,6 +1,6 @@
 package me.laym0z.yourBank.UI.Bank;
 
-import me.laym0z.yourBank.Data.TempStorage.SQLQueries.Data;
+import me.laym0z.yourBank.Data.DB.Database;
 import me.laym0z.yourBank.UI.Penalty.Penalties;
 import me.laym0z.yourBank.UI.MenuComponents.MenuInteraction;
 import me.laym0z.yourBank.YourBank;
@@ -21,9 +21,11 @@ import java.util.Objects;
 
 public class BankMain implements Listener {
     public static void openBankMenu(Player player, String[] data) {
+        Database Database = new Database(YourBank.getDatabaseConnector());
+
         Inventory menu = Bukkit.createInventory(null, 54, "Банк");
 
-        List<List<String>> names = Data.getTopPlayers();
+        List<List<String>> names = Database.getTopPlayers();
         // Створення предметів
         menu.setItem(1, MenuInteraction.createPaper(format(Integer.parseInt(data[1]) , "ДР"))); // diamond_ore
         menu.setItem(6, createTopPlayers(names));// top 3 players
@@ -92,7 +94,8 @@ public class BankMain implements Listener {
             if (clickedItem == null || !clickedItem.hasItemMeta()) return;
             String displayName = Objects.requireNonNull(clickedItem.getItemMeta()).getDisplayName();
             if (ChatColor.stripColor(displayName).equals("[\uD83D\uDCE7] Переказ")) {
-                if (Data.isPlayerBlocked(player.getName())) {
+                Database Database = new Database(YourBank.getDatabaseConnector());
+                if (Database.isPlayerBlocked(player.getName())) {
                     player.sendMessage(ChatColor.DARK_RED+""+ChatColor.BOLD+ "[Банк]"+
                             ChatColor.RESET+ChatColor.RED+" Можливість переказів заблокована через несплату штрафів");
 

@@ -57,13 +57,13 @@ public class bankConfig {
         return instance;
     }
 
-    public void Save() {
-        try {
-            config.save(file);
-        }catch (Exception e) {
-            System.out.println(e.getMessage());
-        }
-    }
+//    public void Save() {
+//        try {
+//            config.save(file);
+//        }catch (Exception e) {
+//            System.out.println(e.getMessage());
+//        }
+//    }
 
     public int getExchangeRate() {
         return exchangeRateInt;

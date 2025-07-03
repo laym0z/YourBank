@@ -1,6 +1,6 @@
 package me.laym0z.yourBank.UI.Penalty;
 
-import me.laym0z.yourBank.Data.TempStorage.SQLQueries.Data;
+import me.laym0z.yourBank.Data.DB.Database;
 import me.laym0z.yourBank.UI.Bank.BankMain;
 import me.laym0z.yourBank.UI.MenuComponents.MenuInteraction;
 import me.laym0z.yourBank.YourBank;
@@ -20,7 +20,7 @@ import java.util.*;
 public class Penalties implements Listener {
 
     public static void openPenaltyListMenu(Player admin, String owner, boolean toRemove) {
-
+        Database Database = new Database(YourBank.getDatabaseConnector());
         UUID uuid = admin.getUniqueId();
 
         Inventory menu = Bukkit.createInventory(null, 27, "Список штрафів");
@@ -29,7 +29,7 @@ public class Penalties implements Listener {
         menu.setItem(17, MenuInteraction.createPaper(ChatColor.GOLD+"[→] Наступна сторінка"));
         menu.setItem(2, MenuInteraction.createPaper(owner));
 
-        YourBank.getPluginContext().penaltiesManager.setPenaltiesPerPlayer(uuid, Data.getAllPenaltiesOfPlayer(owner));
+        YourBank.getPluginContext().penaltiesManager.setPenaltiesPerPlayer(uuid, Database.getAllPenaltiesOfPlayer(owner));
         YourBank.getPluginContext().penaltiesManager.setPlayerPage(uuid, 0);
         YourBank.getPluginContext().penaltiesManager.setPlayerMenu(uuid, menu);
         if (toRemove) {
@@ -122,10 +122,11 @@ public class Penalties implements Listener {
                 }
             }
             else if (ChatColor.stripColor(displayName).equals("[↓] Назад")) {
+                Database Database = new Database(YourBank.getDatabaseConnector());
                 player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1, 1);
                 player.closeInventory();
                 Bukkit.getScheduler().runTaskLater(YourBank.getInstance(), () -> {
-                    BankMain.openBankMenu(player, Data.getPlayerData(player.getName()));
+                    BankMain.openBankMenu(player, Database.getPlayerData(player.getName()));
                 }, 1L); // 1 тік затримки
             }
         }

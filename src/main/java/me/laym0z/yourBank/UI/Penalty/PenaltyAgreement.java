@@ -1,6 +1,6 @@
 package me.laym0z.yourBank.UI.Penalty;
 
-import me.laym0z.yourBank.Data.TempStorage.SQLQueries.Data;
+import me.laym0z.yourBank.Data.DB.Database;
 import me.laym0z.yourBank.UI.Bank.BankMain;
 import me.laym0z.yourBank.UI.MenuComponents.MenuInteraction;
 import me.laym0z.yourBank.YourBank;
@@ -52,6 +52,7 @@ public class PenaltyAgreement implements Listener {
     }
     @EventHandler
     public void onClickInventory(InventoryClickEvent event) {
+        Database Database = new Database(YourBank.getDatabaseConnector());
         if (!(event.getWhoClicked() instanceof Player player)) return;
         Inventory clickedInventory = event.getClickedInventory();
         if (clickedInventory == null) return;
@@ -61,7 +62,7 @@ public class PenaltyAgreement implements Listener {
             String displayName = event.getCurrentItem().getItemMeta().getDisplayName();
             if (ChatColor.stripColor(displayName).equals("Оплатити")) {
                 List<String> info = YourBank.getPluginContext().penaltiesManager.getPlayerPenalty(player.getUniqueId());
-                boolean result = Data.payPenalty(Integer.parseInt(info.get(0)), Integer.parseInt(info.get(1)), info.get(2), info.get(3));
+                boolean result = Database.payPenalty(Integer.parseInt(info.get(0)), Integer.parseInt(info.get(1)), info.get(2), info.get(3));
                 if (result) {
                     player.sendMessage(ChatColor.DARK_GREEN+""+ChatColor.BOLD+ "[Банк]"+
                             ChatColor.RESET+ChatColor.GREEN+" Штраф успішно оплачено");
@@ -77,7 +78,7 @@ public class PenaltyAgreement implements Listener {
             else if (ChatColor.stripColor(displayName).equals("Оплатити")) {
                 player.closeInventory();
                 Bukkit.getScheduler().runTaskLater(YourBank.getInstance(), () -> {
-                    BankMain.openBankMenu(player, Data.getPlayerData(player.getName()));
+                    BankMain.openBankMenu(player, Database.getPlayerData(player.getName()));
                     YourBank.pluginContext.penaltiesManager.removePlayerPenalty(player.getUniqueId());
                 }, 1L); // 1 тік затримки
             }

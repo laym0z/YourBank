@@ -1,5 +1,4 @@
-package me.laym0z.yourBank.Data.TempStorage.SQLQueries;
-
+package me.laym0z.yourBank.Data.DB;
 import me.laym0z.yourBank.config.bankConfig;
 
 import java.sql.*;
@@ -8,16 +7,45 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
-public class Data {
-    static String registeredPlayersPath = "jdbc:sqlite:plugins/registerPlayers/registerPlayers.db";
-    static String bankPath = "jdbc:sqlite:plugins/YourBank/yourBank.db";
-    static String passportPath = "jdbc:sqlite:plugins/yourPassport/Passports.db";
+public class Database {
+    private final DatabaseConnector connector;
+
+    public Database(DatabaseConnector connector) {
+        this.connector = connector;
+    }
 
     //----------------------REGISTERED PLAYER----------------------------
+    public void addToTable(String uuid, String name, String date) {
+        String createTableSQL;
+        if (connector instanceof MySQL) {
+            createTableSQL = """
+                    INSERT IGNORE INTO registered_players (uuid, name, join_date) VALUES (?, ?, ?);
+                    """;
+        }
+        else {
+            createTableSQL = """
+                INSERT OR IGNORE INTO registered_players (uuid, name, join_date) VALUES (?, ?, ?);
+                """;
+        }
+        try (Connection conn = connector.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(createTableSQL)) {
+            pstmt.setString(1, uuid);
+            pstmt.setString(2, name);
+            if (connector instanceof MySQL) {
+                pstmt.setDate(3, java.sql.Date.valueOf(LocalDate.now()));
+            }
+            else {
+                pstmt.setString(3, date);
+            }
+            pstmt.executeUpdate();
+        } catch (SQLException e) {
+            System.out.println("SQL Error: " + e.getMessage());
+        }
+    }
 
-    public static boolean hasPlayedBefore(String name) {
+    public boolean hasPlayedBefore(String name) {
         String sql = "SELECT 1 FROM registered_players WHERE name = ? LIMIT 1";
-        try (Connection conn = DriverManager.getConnection(registeredPlayersPath);
+        try (Connection conn = connector.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setString(1, name);
             try (ResultSet rs = pstmt.executeQuery()) {
@@ -31,19 +59,23 @@ public class Data {
 
     //-------------------------BANK--------------------------------
 
-    public static boolean createBankAccount(String name) {
+    public boolean createBankAccount(String name) {
         String insertDataSQL = "INSERT INTO Bank(name, diamonds, create_date) " +
                 "VALUES (?, ?, ?)";
-        try (Connection conn = DriverManager.getConnection(bankPath);
+        try (Connection conn = connector.getConnection();
              PreparedStatement stmt = conn.prepareStatement(insertDataSQL)) {
 
-            stmt.setString(1, name);                                         // name
-            stmt.setInt(2, 0);                                            // diamonds
-            stmt.setString(3, String.valueOf(LocalDate.now()));              // create_date
-
+            stmt.setString(1, name);
+            stmt.setInt(2, 0);
+            if (connector instanceof MySQL) {
+                stmt.setDate(3, java.sql.Date.valueOf(LocalDate.now()));
+            }
+            else {
+                stmt.setString(3, String.valueOf(LocalDate.now()));
+            }
             int result = stmt.executeUpdate();
             if (result == 1) {
-                System.out.println("Data has been inserted.");
+                System.out.println("Database has been inserted.");
                 return true;
             }
             else {
@@ -56,24 +88,9 @@ public class Data {
         return false;
     }
 
-    public static boolean getPlayersPassport(String name) {
-        String sql = "SELECT 1 FROM Players WHERE name = ? LIMIT 1";
-        try (Connection conn = DriverManager.getConnection(passportPath);
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setString(1, name);
-            try (ResultSet rs = pstmt.executeQuery()) {
-                return rs.next();
-            }
-
-        } catch (SQLException e) {
-            System.out.println("SQL Error: " + e.getMessage());
-        }
-        return false;
-    }
-
-    public static boolean getPlayersBank(String name) {
+    public boolean getPlayersBank(String name) {
         String sql = "SELECT 1 FROM Bank WHERE name = ? LIMIT 1";
-        try (Connection conn = DriverManager.getConnection(bankPath);
+        try (Connection conn = connector.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setString(1, name);
             try (ResultSet rs = pstmt.executeQuery()) {
@@ -86,11 +103,11 @@ public class Data {
         return false;
     }
 
-    public static List<String> getAllPlayers(String name) {
+    public List<String> getAllPlayers(String name) {
         String SQLselectQuery = "SELECT name FROM Bank WHERE name != ? ORDER BY name ASC";
         List<String> names = new ArrayList<>();
 
-        try (Connection conn = DriverManager.getConnection(bankPath);
+        try (Connection conn = connector.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(SQLselectQuery)) {
             pstmt.setString(1, name);
             try (ResultSet rs = pstmt.executeQuery()) {
@@ -105,10 +122,10 @@ public class Data {
 
     }
 
-    public static List<List<String>> getTopPlayers() {
+    public List<List<String>> getTopPlayers() {
         String SQLselectQuery = "SELECT name, diamonds FROM Bank ORDER BY diamonds DESC";
         List<List<String>> names = new ArrayList<>();
-        try (Connection conn = DriverManager.getConnection(bankPath);
+        try (Connection conn = connector.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(SQLselectQuery)) {
             try (ResultSet rs = pstmt.executeQuery()) {
                 while (rs.next()) {
@@ -125,11 +142,11 @@ public class Data {
 
     }
 
-    public static String[] getPlayerData(String name) {
+    public String[] getPlayerData(String name) {
         String SQLselectQuery = "SELECT * FROM Bank WHERE name = ?";
         String[] data = null;
 
-        try (Connection conn = DriverManager.getConnection(bankPath);
+        try (Connection conn = connector.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(SQLselectQuery)) {
 
             pstmt.setString(1, name);
@@ -148,7 +165,7 @@ public class Data {
         return data;
     }
 
-    public static HashMap<Integer, String> addToBalance(String type, String name, int Amount) {
+    public HashMap<Integer, String> addToBalance(String type, String name, int Amount) {
         HashMap <Integer, String> result = new HashMap<>();
         String SQLQuery = "UPDATE Bank SET diamonds = diamonds + ? WHERE name = ?";
 
@@ -156,7 +173,7 @@ public class Data {
             Amount = ConvertToDiamonds(Amount);
         }
 
-        try (Connection conn = DriverManager.getConnection(bankPath);
+        try (Connection conn = connector.getConnection();
              PreparedStatement ps = conn.prepareStatement(SQLQuery)){
             ps.setInt(1, Amount);
             ps.setString(2, name);
@@ -172,14 +189,14 @@ public class Data {
         return result;
     }
 
-    public static HashMap<Integer, String> deductFromBalance(String type, String name, int Amount) {
+    public HashMap<Integer, String> deductFromBalance(String type, String name, int Amount) {
         HashMap <Integer, String> result = new HashMap<>();
         String SQLQuery = "UPDATE Bank SET diamonds = diamonds - ? WHERE name = ? AND diamonds >= ?";
 
         if (type.equals("deep_diamonds")) {
             Amount = ConvertToDiamonds(Amount);
         }
-        try (Connection conn = DriverManager.getConnection(bankPath);
+        try (Connection conn = connector.getConnection();
              PreparedStatement ps = conn.prepareStatement(SQLQuery)){
             ps.setInt(1, Amount);
             ps.setString(2, name);
@@ -196,14 +213,14 @@ public class Data {
         return result;
     }
 
-    public static int ConvertToDiamonds(int Amount) {
+    public int ConvertToDiamonds(int Amount) {
         return Amount/bankConfig.getInstance().getExchangeRate();
     }
 
-    public static boolean isPlayerBlocked(String name) {
+    public boolean isPlayerBlocked(String name) {
         boolean isBlocked=false;
         String SQLSelect = "SELECT is_blocked FROM Bank WHERE name = ?";
-        try (Connection conn = DriverManager.getConnection(bankPath);
+        try (Connection conn = connector.getConnection();
              PreparedStatement select = conn.prepareStatement(SQLSelect)) {
             select.setString(1, name);
             try (ResultSet rs = select.executeQuery()) {
@@ -218,12 +235,12 @@ public class Data {
         return isBlocked;
     }
 
-    public static boolean makeTransaction(String receiver, String sender, int sum, Boolean payCommission) {
+    public boolean makeTransaction(String receiver, String sender, int sum, Boolean payCommission) {
         String SQLAddToReceiver = "UPDATE Bank SET diamonds = diamonds + ? WHERE name = ?";
         String SQLDeductFromSender = "UPDATE Bank SET diamonds = diamonds - ? WHERE name = ? AND diamonds >= ?";
         String SQLAddToStateTreasury = "UPDATE StateTreasury SET diamonds = diamonds + ?";
 
-        try (Connection conn = DriverManager.getConnection(bankPath);
+        try (Connection conn = connector.getConnection();
             PreparedStatement deductFromSender = conn.prepareStatement(SQLDeductFromSender)) {
             int resultSum;
             double percent = bankConfig.getInstance().getPerTransaction();
@@ -272,19 +289,26 @@ public class Data {
 
     //------------------------PENALTY-------------------------------
 
-    public static void addPenalty(String name, int amount, String reason, String creationDate, String paymentTerm, String receiver) {
+    public void addPenalty(String name, int amount, String reason, LocalDate creationDate, LocalDate paymentTerm, String receiver) {
         String SQLAddPenalty ="INSERT INTO Penalties(name, amount, reason, creation_date, payment_term, receiver) VALUES (?, ?, ?, ?, ?, ?)";
         String SQLBlockQuery = "UPDATE Bank SET is_blocked = 1 WHERE name = ?";
         boolean haveToBlock=haveToBlock(name);
-        try (Connection conn = DriverManager.getConnection(bankPath);
+
+        try (Connection conn = connector.getConnection();
              //add penalty
              PreparedStatement addPenalty = conn.prepareStatement(SQLAddPenalty)) {
             conn.setAutoCommit(false);
             addPenalty.setString(1, name);
             addPenalty.setInt(2, amount);
             addPenalty.setString(3, reason);
-            addPenalty.setString(4, creationDate);
-            addPenalty.setString(5, paymentTerm);
+            if (connector instanceof MySQL) {
+                addPenalty.setDate(4, java.sql.Date.valueOf(creationDate));
+                addPenalty.setDate(5, java.sql.Date.valueOf(paymentTerm));
+            }
+            else {
+                addPenalty.setString(4, String.valueOf(creationDate));
+                addPenalty.setString(5, String.valueOf(paymentTerm));
+            }
             addPenalty.setString(6, receiver);
             addPenalty.executeUpdate();
 
@@ -302,7 +326,7 @@ public class Data {
             System.out.println("SQL Error: " + e.getMessage());
             try {
                 if (!e.getMessage().contains("not in transaction")) {
-                    DriverManager.getConnection(bankPath).rollback();
+                    connector.getConnection().rollback();
                 }
             } catch (SQLException ex) {
                 System.out.println("Rollback Error: " + ex.getMessage());
@@ -310,10 +334,10 @@ public class Data {
         }
     }
 
-    public static List<List<String>> getAllPenaltiesOfPlayer(String name) {
+    public List<List<String>> getAllPenaltiesOfPlayer(String name) {
         List<List<String>> penalties = new ArrayList<>();
         String sql ="SELECT * FROM Penalties WHERE name = ?";
-        try (Connection conn = DriverManager.getConnection(bankPath);
+        try (Connection conn = connector.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
 
             pstmt.setString(1, name);
@@ -337,10 +361,10 @@ public class Data {
         return penalties;
     }
 
-    public static boolean doesPlayerHavePenalties(String name) {
+    public boolean doesPlayerHavePenalties(String name) {
         String SQLselectQuery = "SELECT name FROM Penalties WHERE name = ?";
 
-        try (Connection conn = DriverManager.getConnection(bankPath);
+        try (Connection conn = connector.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(SQLselectQuery)) {
             pstmt.setString(1, name);
             try (ResultSet rs = pstmt.executeQuery()) {
@@ -354,14 +378,14 @@ public class Data {
         return false;
     }
 
-    public static boolean removePenalty(int id) {
+    public boolean removePenalty(int id) {
         String SQLDelete = "DELETE FROM Penalties WHERE id = ?";
         String SQLUnBlockQuery = "UPDATE Bank SET is_blocked = 0 WHERE name = ?";
         String SelectNameById = "SELECT name FROM Penalties WHERE id = ?";
         String name;
 
         boolean result = false;
-        try (Connection conn = DriverManager.getConnection(bankPath);
+        try (Connection conn = connector.getConnection();
              PreparedStatement selectName = conn.prepareStatement(SelectNameById)) {
             conn.setAutoCommit(false);
 
@@ -392,7 +416,7 @@ public class Data {
             try {
                 // У випадку помилки — відкат змін
                 if (!e.getMessage().contains("not in transaction")) {
-                    DriverManager.getConnection(bankPath).rollback();
+                    connector.getConnection().rollback();
                 }
             } catch (SQLException ex) {
                 System.out.println("Rollback Error: " + ex.getMessage());
@@ -401,7 +425,7 @@ public class Data {
         return result;
     }
 
-    public static boolean payPenalty(int ID, int sum, String name, String receiver) {
+    public boolean payPenalty(int ID, int sum, String name, String receiver) {
 
         String sqlCheck = "SELECT diamonds FROM bank WHERE name = ?";
         String sqlBank = "UPDATE bank SET diamonds = diamonds - ? WHERE name = ?";
@@ -410,7 +434,7 @@ public class Data {
         String SQLPayToState = "UPDATE StateTreasury SET diamonds = diamonds + ?";
         String SQLPayToPlayer = "UPDATE Bank SET diamonds = diamonds + ? WHERE name = ?";
 
-        try (Connection conn = DriverManager.getConnection(bankPath)) {
+        try (Connection conn = connector.getConnection()) {
             conn.setAutoCommit(false); // Початок транзакції
 
             // Перевірка, чи вистачає діамантів
@@ -465,7 +489,7 @@ public class Data {
             System.out.println("SQL Error: " + e.getMessage());
             try {
                 if (!e.getMessage().contains("not in transaction")) {
-                    DriverManager.getConnection(bankPath).rollback();
+                    connector.getConnection().rollback();
                 }
             } catch (SQLException ex) {
                 System.out.println("Rollback Error: " + ex.getMessage());
@@ -474,10 +498,10 @@ public class Data {
         return false;
     }
 
-    public static boolean haveToBlock(String name) {
+    public boolean haveToBlock(String name) {
         String SQLselectQuery = "SELECT COUNT(*) FROM Penalties WHERE name = ?";
 
-        try (Connection conn = DriverManager.getConnection(bankPath);
+        try (Connection conn = connector.getConnection();
              PreparedStatement selectStmt = conn.prepareStatement(SQLselectQuery)) {
             conn.setAutoCommit(false);
             selectStmt.setString(1, name);

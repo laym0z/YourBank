@@ -1,7 +1,8 @@
 package me.laym0z.yourBank.commands;
 
-import me.laym0z.yourBank.Data.TempStorage.SQLQueries.Data;
+import me.laym0z.yourBank.Data.DB.Database;
 import me.laym0z.yourBank.UI.Bank.BankForBanker;
+import me.laym0z.yourBank.YourBank;
 import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -13,10 +14,11 @@ public class BankMenu implements CommandExecutor {
     @Override
     public boolean onCommand(@NotNull CommandSender commandSender, @NotNull Command command, @NotNull String s, String[] args) {
         Player banker = (Player) commandSender;
+        Database Database = new Database(YourBank.getDatabaseConnector());
         if (args.length != 1) {
             return false;
         }
-        if (Data.getPlayersBank(args[0])) {
+        if (Database.getPlayersBank(args[0])) {
             BankForBanker.openBankMenu(banker, args[0]);
         }
         else {

@@ -1,6 +1,6 @@
 package me.laym0z.yourBank.UI.Penalty;
 
-import me.laym0z.yourBank.Data.TempStorage.SQLQueries.Data;
+import me.laym0z.yourBank.Data.DB.Database;
 import me.laym0z.yourBank.UI.Bank.BankMain;
 import me.laym0z.yourBank.UI.MenuComponents.MenuInteraction;
 import me.laym0z.yourBank.YourBank;
@@ -53,6 +53,7 @@ public class RemovePenaltyAgreement implements Listener {
     }
     @EventHandler
     public void onClickInventory(InventoryClickEvent event) {
+        Database Database = new Database(YourBank.getDatabaseConnector());
         if (!(event.getWhoClicked() instanceof Player player)) return;
         Inventory clickedInventory = event.getClickedInventory();
         if (clickedInventory == null) return;
@@ -60,7 +61,7 @@ public class RemovePenaltyAgreement implements Listener {
             event.setCancelled(true);
             String displayName = event.getCurrentItem().getItemMeta().getDisplayName();
             if (ChatColor.stripColor(displayName).equals("Видалити")) {
-                Data.removePenalty(YourBank.pluginContext.penaltiesManager.getIDToRemove(player.getUniqueId()));
+                Database.removePenalty(YourBank.pluginContext.penaltiesManager.getIDToRemove(player.getUniqueId()));
                 player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1, 1);
                 player.closeInventory();
                 player.sendMessage(ChatColor.GREEN+"Штраф був видалений");
@@ -68,7 +69,7 @@ public class RemovePenaltyAgreement implements Listener {
             else if (ChatColor.stripColor(displayName).equals("Відміна")) {
                 player.closeInventory();
                 Bukkit.getScheduler().runTaskLater(YourBank.getInstance(), () -> {
-                    BankMain.openBankMenu(player, Data.getPlayerData(player.getName()));
+                    BankMain.openBankMenu(player, Database.getPlayerData(player.getName()));
                 }, 1L); // 1 тік затримки
             }
         }

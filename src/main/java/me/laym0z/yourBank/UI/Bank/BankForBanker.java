@@ -1,6 +1,6 @@
 package me.laym0z.yourBank.UI.Bank;
 
-import me.laym0z.yourBank.Data.TempStorage.SQLQueries.Data;
+import me.laym0z.yourBank.Data.DB.Database;
 import me.laym0z.yourBank.UI.MenuComponents.MenuInteraction;
 import me.laym0z.yourBank.YourBank;
 import org.bukkit.Bukkit;
@@ -17,7 +17,8 @@ import java.util.Objects;
 
 public class BankForBanker implements Listener {
     public static void openBankMenu(Player banker, String owner) {
-        String[] data = Data.getPlayerData(owner);
+        Database Database = new Database(YourBank.getDatabaseConnector());
+        String[] data = Database.getPlayerData(owner);
 
         banker.closeInventory();
         Inventory menu = Bukkit.createInventory(null, 36, "Меню банкіра");
@@ -65,7 +66,8 @@ public class BankForBanker implements Listener {
                 Bukkit.getScheduler().runTaskLater(YourBank.getInstance(), () -> Deposit.openDepositMenu(player), 1L); // 1 тік затримки
             }
             else if (ChatColor.stripColor(displayName).equals("[↓] Зняти кошти")) {
-                if (Data.isPlayerBlocked(player.getName())) {
+                Database Database = new Database(YourBank.getDatabaseConnector());
+                if (Database.isPlayerBlocked(player.getName())) {
                     player.sendMessage(ChatColor.DARK_RED+""+ChatColor.BOLD+ "[Банк]"+
                                     ChatColor.RESET+ChatColor.RED+" Операція заблокована через велику кількість несплачених штрафів");
                     player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_BASS, 1, 1);

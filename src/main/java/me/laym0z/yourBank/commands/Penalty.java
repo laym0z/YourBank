@@ -1,7 +1,8 @@
 package me.laym0z.yourBank.commands;
 
-import me.laym0z.yourBank.Data.TempStorage.SQLQueries.Data;
+import me.laym0z.yourBank.Data.DB.Database;
 import me.laym0z.yourBank.UI.Penalty.Penalties;
+import me.laym0z.yourBank.YourBank;
 import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -21,7 +22,7 @@ import java.util.List;
 public class Penalty implements CommandExecutor, TabCompleter {
     @Override
     public boolean onCommand(@NotNull CommandSender commandSender, @NotNull Command command, @NotNull String s, String[] args) {
-
+        Database database = new Database(YourBank.getDatabaseConnector());
         if (args.length == 0) {
             commandSender.sendMessage(ChatColor.DARK_RED+""+ChatColor.BOLD+ "[Штрафи]"+
                     ChatColor.RESET+ChatColor.RED+" Введи дані");
@@ -39,7 +40,7 @@ public class Penalty implements CommandExecutor, TabCompleter {
             String name = args[1];
             termPayment = args[3];
             String receiver;
-            if (!Data.hasPlayedBefore(name)) {
+            if (!database.hasPlayedBefore(name)) {
                 commandSender.sendMessage(String.format(ChatColor.DARK_RED+""+ChatColor.BOLD+ "[Штрафи]"+
                         ChatColor.RESET+ChatColor.RED+" Гравця %s не існує!", name));
                 return true;
@@ -52,13 +53,13 @@ public class Penalty implements CommandExecutor, TabCompleter {
                         ChatColor.RESET+ChatColor.RED+" Некорекне поле суми: "+ChatColor.UNDERLINE+args[2]);
                 return true;
             }
-            if (!termPayment.matches("^\\d{2}-\\d{2}-\\d{4}$")){
+            if (!termPayment.matches("^\\d{4}-\\d{2}-\\d{2}$")){
                 commandSender.sendMessage(ChatColor.DARK_RED+""+ChatColor.BOLD+ "[Штрафи]"+
-                        ChatColor.RESET+ChatColor.RED+" Дата має вводитися в наступному форматі: DD-MM-YYYY \nПриклад: "+ChatColor.GOLD+"01-01-2025");
+                        ChatColor.RESET+ChatColor.RED+" Дата має вводитися в наступному форматі: YYYY-MM-DD \nПриклад: "+ChatColor.GOLD+"2025-01-01");
                 return true;
             }
 
-            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy");
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
             LocalDate parsedDate;
             try {
                 parsedDate = LocalDate.parse(termPayment, formatter);
@@ -74,12 +75,12 @@ public class Penalty implements CommandExecutor, TabCompleter {
                 return true;
             }
 
-            //receiver-------
+            //-----------------------RECEIVER----------------------------
 
             if (args[4].equalsIgnoreCase("Держава")) {
                 receiver = args[4];
             }
-            else if (Data.getPlayersBank(args[4])) {
+            else if (database.getPlayersBank(args[4])) {
                 receiver = args[4];
             }
             else {
@@ -87,7 +88,7 @@ public class Penalty implements CommandExecutor, TabCompleter {
                         ChatColor.RESET+ChatColor.RED+" Цей гравець не має банківського рахунку!");
                 return true;
             }
-            //---------------
+            //------------------------------------------------------------
 
 
             StringBuilder reason = new StringBuilder();
@@ -98,14 +99,14 @@ public class Penalty implements CommandExecutor, TabCompleter {
 
             LocalDate date = LocalDate.now();
 
-            Data.addPenalty(name, amount, reason.toString(), formatter.format(date), termPayment, receiver);
+            database.addPenalty(name, amount, reason.toString(), date, parsedDate, receiver);
             commandSender.sendMessage(String.format(ChatColor.DARK_GREEN+""+ChatColor.BOLD+ "[Штрафи]"+
                     ChatColor.RESET+ChatColor.GREEN+" Гравцю %s був виписаний штраф на суму %d ДР", name, amount));
             return true;
         }
         //LIST
         else if (args.length == 2 && args[0].equals("list")) {
-            if (!Data.doesPlayerHavePenalties(args[1])) {
+            if (!database.doesPlayerHavePenalties(args[1])) {
                 commandSender.sendMessage(ChatColor.DARK_RED+""+ChatColor.BOLD+ "[Штрафи]"+
                         ChatColor.RESET+ChatColor.RED+" Цей гравець не має штрафів");
                 return true;
@@ -114,26 +115,12 @@ public class Penalty implements CommandExecutor, TabCompleter {
         }
         //REMOVE
         else if (args.length == 2 && args[0].equals("remove")) {
-            if (!Data.doesPlayerHavePenalties(args[1])) {
+            if (!database.doesPlayerHavePenalties(args[1])) {
                 commandSender.sendMessage(ChatColor.DARK_RED+""+ChatColor.BOLD+ "[Штрафи]"+
                         ChatColor.RESET+ChatColor.RED+" Цей гравець не має штрафів");
                 return true;
             }
             Penalties.openPenaltyListMenu((Player) commandSender, args[1], true);
-
-//            int id;
-//            try {
-//                id = Integer.parseInt(args[1]);
-//            } catch (NumberFormatException e) {
-//                commandSender.sendMessage(ChatColor.RED+"Не коректне значення ID: "+args[1]);
-//                return true;
-//            }
-//            if (Data.removePenalty(id)) {
-//                commandSender.sendMessage(String.format(ChatColor.GOLD+"Штраф з ID %d був бидалений", id));
-//            }
-//            else {
-//                commandSender.sendMessage(String.format(ChatColor.RED+"Штрафу з ID %d не існує", id));
-//            }
 
         }
         else if (args.length > 2) {

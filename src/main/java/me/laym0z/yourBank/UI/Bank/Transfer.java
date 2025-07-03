@@ -1,6 +1,6 @@
 package me.laym0z.yourBank.UI.Bank;
 
-import me.laym0z.yourBank.Data.TempStorage.SQLQueries.Data;
+import me.laym0z.yourBank.Data.DB.Database;
 import me.laym0z.yourBank.UI.MenuComponents.MenuInteraction;
 import me.laym0z.yourBank.YourBank;
 import org.bukkit.Bukkit;
@@ -65,7 +65,8 @@ public class Transfer implements Listener {
 
 
     public static List<List<String>> getAllBankUsers(Player mainPlayer) {
-        List <String> allNames = Data.getAllPlayers(mainPlayer.getName());
+        Database Database = new Database(YourBank.getDatabaseConnector());
+        List <String> allNames = Database.getAllPlayers(mainPlayer.getName());
         List<List<String>> grouped = new ArrayList<>();
 
         //--------TEST--------
@@ -107,6 +108,7 @@ public class Transfer implements Listener {
 
     @EventHandler
     public void onClickInventory(InventoryClickEvent event) {
+        Database Database = new Database(YourBank.getDatabaseConnector());
         if (!(event.getWhoClicked() instanceof Player)) return;
         Inventory clickedInventory = event.getClickedInventory();
         if (clickedInventory == null) return;
@@ -156,7 +158,7 @@ public class Transfer implements Listener {
                             ChatColor.RESET+ChatColor.RED+" Введи суму");
                     return;
                 }
-                String[] data = Data.getPlayerData(player.getName());
+                String[] data = Database.getPlayerData(player.getName());
                 if (Integer.parseInt(data[1]) < sum) {
                     player.sendMessage(ChatColor.DARK_RED+""+ChatColor.BOLD+ "[Банк]"+
                             ChatColor.RESET+ChatColor.RED+" Недостатньо коштів");
@@ -166,9 +168,9 @@ public class Transfer implements Listener {
                 String receiver = Objects.requireNonNull(Objects.requireNonNull(YourBank.getPluginContext().transferManager
                         .getPlayerMenu(uuid).getItem(40)).getItemMeta()).getDisplayName();
 
-                if (Data.getPlayersBank(receiver.replace("§f", ""))) {
+                if (Database.getPlayersBank(receiver.replace("§f", ""))) {
                     Boolean payCommission = YourBank.pluginContext.transferManager.getPayCommissionChoose(uuid);
-                    if (Data.makeTransaction(receiver.replace("§f", ""), player.getName(), sum, payCommission)) {
+                    if (Database.makeTransaction(receiver.replace("§f", ""), player.getName(), sum, payCommission)) {
                         player.sendMessage(ChatColor.DARK_GREEN+""+ChatColor.BOLD+ "[Банк]"+
                                 ChatColor.RESET+ChatColor.GREEN+" Переведення коштів успішне");
                     }
@@ -209,7 +211,7 @@ public class Transfer implements Listener {
                 player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1, 1);
                 player.closeInventory();
                 Bukkit.getScheduler().runTaskLater(YourBank.getInstance(), () -> {
-                    BankMain.openBankMenu(player, Data.getPlayerData(player.getName()));
+                    BankMain.openBankMenu(player, Database.getPlayerData(player.getName()));
                 }, 1L); // 1 тік затримки
             }
         }

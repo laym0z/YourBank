@@ -1,6 +1,7 @@
 package me.laym0z.yourBank.UI.MenuComponents;
 
-import me.laym0z.yourBank.Data.TempStorage.SQLQueries.Data;
+import me.laym0z.yourBank.Data.DB.Database;
+import me.laym0z.yourBank.YourBank;
 import org.bukkit.Material;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
@@ -87,6 +88,7 @@ public class MenuInteraction {
     }
 
     public static HashMap<Integer, String> ConfirmDeposit(Inventory menu, Inventory playerInv, Material type, String name) {
+        Database Database = new Database(YourBank.getDatabaseConnector());
         HashMap <Integer, String> result = new HashMap<>();
         if (menu.getItem(10) == null) {
             result.put(0, "[Банк] Введіть суму");
@@ -140,7 +142,7 @@ public class MenuInteraction {
         if (type == Material.DEEPSLATE_DIAMOND_ORE) typeString="deep_diamonds";
         else if (type == Material.DIAMOND_ORE) typeString="diamonds";
 
-        result = Data.addToBalance(typeString, name, temp);
+        result = Database.addToBalance(typeString, name, temp);
         return result;
         /*
         перебрати всі речі в інвентраі гравця та знайти діаманти за типом та запам'ятати індекс слоту
@@ -154,11 +156,12 @@ public class MenuInteraction {
             якщо потреба більше, ніж в слоті - почистити слот та відняти ту суму слоту від потреби
             якщо потреба менше, ніж в слоті - від слота віднімається потреба, а потреба дорівнює нулю
 
-        Відбувається запит до бази даних на оновлення кількості віртуальної валюти (Реалізувати метод в Data)
+        Відбувається запит до бази даних на оновлення кількості віртуальної валюти (Реалізувати метод в Database)
         */
     }
 
     public static HashMap<Integer, String> ConfirmWithdraw(Inventory menu, Inventory playerInv, Material type, String name) {
+        Database Database = new Database(YourBank.getDatabaseConnector());
         HashMap <Integer, String> result = new HashMap<>();
         ArrayList<Integer> playersSlots = new ArrayList<>();
         int slotsCount = 0;
@@ -200,7 +203,7 @@ public class MenuInteraction {
         String typeString="";
         if (type == Material.DEEPSLATE_DIAMOND_ORE) typeString="deep_diamonds";
         else if (type == Material.DIAMOND_ORE) typeString="diamonds";
-        result = Data.deductFromBalance(typeString, name, amount);
+        result = Database.deductFromBalance(typeString, name, amount);
         if (result.containsKey(0)) return result;
         ItemStack item = new ItemStack(type);
         for (Integer playersSlot : playersSlots) {
@@ -234,4 +237,6 @@ public class MenuInteraction {
         }
         return paper;
     }
+
+
 }
